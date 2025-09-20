@@ -1,0 +1,5 @@
+<div class="error-container">
+  <h1>Content Not Found</h1>
+  <p><%= @message %></p>
+  <%= link "Back to Content Index", to: Routes.content_path(@conn, :index), class: "btn btn-primary" %>
+</div>

@@ -1,0 +1,236 @@
+<!-- Hero Section -->
+<div class="hero-section">
+  <div class="container">
+    <div class="floating-hero">
+      <h1 class="hero-title mb-4">
+        Init your LLM in seconds, consistently, everywhere
+      </h1>
+      <p class="hero-description mb-5">
+        Stop wasting time on manual LLM setup. Our battle-tested initialization scripts ensure your AI models are configured consistently across all environments - from local development to production deployments.
+      </p>
+      <a href="#get-started" class="btn btn-outline-light btn-lg">
+        Get Started <i class="fas fa-arrow-down ms-2"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Get Started Section -->
+<div class="get-started-section" id="get-started">
+  <div class="container">
+    <div class="row">
+      <!-- Install Commands -->
+      <div class="col-lg-6">
+        <div class="install-panel">
+          <div class="install-header text-center mb-4">
+            <h3 class="mb-2">Get Started Now</h3>
+            <p class="text-muted">Choose your platform and run the command</p>
+          </div>
+
+          <div class="install-commands">
+            <!-- Bash Command -->
+            <div class="command-item mb-4">
+              <div class="command-header">
+                <div class="d-flex align-items-center">
+                  <div class="platform-icon me-3">
+                    <i class="fab fa-linux"></i>
+                  </div>
+                  <div>
+                    <h5 class="mb-0">Linux / macOS</h5>
+                    <small class="text-muted">Bash terminal</small>
+                  </div>
+                </div>
+              </div>
+              <div class="command-body mt-3">
+                <div class="code-container">
+                  <code>curl -sSL https://initai.dev/install.sh | bash</code>
+                  <button class="copy-button" onclick="copyToClipboard('curl -sSL https://initai.dev/install.sh | bash')" title="Copy to clipboard">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- PowerShell Command -->
+            <div class="command-item mb-4">
+              <div class="command-header">
+                <div class="d-flex align-items-center">
+                  <div class="platform-icon me-3">
+                    <i class="fab fa-windows"></i>
+                  </div>
+                  <div>
+                    <h5 class="mb-0">Windows</h5>
+                    <small class="text-muted">PowerShell</small>
+                  </div>
+                </div>
+              </div>
+              <div class="command-body mt-3">
+                <div class="code-container">
+                  <code>iwr -useb https://initai.dev/install.ps1 | iex</code>
+                  <button class="copy-button" onclick="copyToClipboard('iwr -useb https://initai.dev/install.ps1 | iex')" title="Copy to clipboard">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Python Command -->
+            <div class="command-item mb-4">
+              <div class="command-header">
+                <div class="d-flex align-items-center">
+                  <div class="platform-icon me-3">
+                    <i class="fab fa-python"></i>
+                  </div>
+                  <div>
+                    <h5 class="mb-0">Python</h5>
+                    <small class="text-muted">Cross-platform</small>
+                  </div>
+                </div>
+              </div>
+              <div class="command-body mt-3">
+                <div class="code-container">
+                  <code>curl -sSL https://initai.dev/install.py | python3</code>
+                  <button class="copy-button" onclick="copyToClipboard('curl -sSL https://initai.dev/install.py | python3')" title="Copy to clipboard">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="install-footer text-center mt-4">
+            <p class="text-muted small">
+              Or download scripts directly:
+              <a href="/install.sh" class="text-decoration-none">install.sh</a> •
+              <a href="/install.ps1" class="text-decoration-none">install.ps1</a> •
+              <a href="/install.py" class="text-decoration-none">install.py</a>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features List -->
+      <div class="col-lg-6">
+        <div class="features-list">
+          <h3 class="mb-4">Why Choose Our Scripts?</h3>
+          <div class="feature-item mb-3">
+            <i class="fas fa-check-circle text-success me-3"></i>
+            <span>One script, identical results everywhere</span>
+          </div>
+          <div class="feature-item mb-3">
+            <i class="fas fa-check-circle text-success me-3"></i>
+            <span>Enterprise-ready security and compliance</span>
+          </div>
+          <div class="feature-item mb-3">
+            <i class="fas fa-check-circle text-success me-3"></i>
+            <span>Zero to productive AI in under 30 seconds</span>
+          </div>
+          <div class="feature-item mb-3">
+            <i class="fas fa-check-circle text-success me-3"></i>
+            <span>Framework agnostic configurations</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Frameworks Section -->
+<div class="frameworks-section" id="frameworks">
+  <div class="container">
+    <div class="text-center mb-5">
+      <h2 class="section-title">Choose Your Stack</h2>
+      <p class="section-subtitle">Professional configurations for every development workflow</p>
+    </div>
+
+    <div class="row g-4">
+      <!-- Claude -->
+      <div class="col-lg-6">
+        <div class="framework-card">
+          <div class="framework-header">
+            <h3>Claude</h3>
+            <p class="text-muted">Anthropic's Claude with proven configurations</p>
+          </div>
+          <div class="framework-options">
+            <a href="/claude/blissframework" class="framework-option">
+              <strong>Bliss Framework</strong>
+              <span>Maximum developer productivity with Claude</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gemini -->
+      <div class="col-lg-6">
+        <div class="framework-card">
+          <div class="framework-header">
+            <h3>Gemini</h3>
+            <p class="text-muted">Google's Gemini optimized for development</p>
+          </div>
+          <div class="framework-options">
+            <a href="/gemini/blissframework" class="framework-option">
+              <strong>Bliss Framework</strong>
+              <span>Streamlined development experience with Gemini</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="features-section">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-3">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-sync-alt"></i>
+          </div>
+          <h5>Consistency First</h5>
+          <p>One script, identical results everywhere. No more copy-pasting prompts between projects.</p>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h5>Enterprise Ready</h5>
+          <p>Built for teams that need reliable, auditable, and secure LLM configurations.</p>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <h5>Zero Friction</h5>
+          <p>From zero to productive AI in under 30 seconds. No complex setup, no configuration drift.</p>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-cubes"></i>
+          </div>
+          <h5>Framework Agnostic</h5>
+          <p>Whether you prefer rapid prototyping or enterprise-grade stability, we have the right configuration.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(function() {
+    // You could add a toast notification here
+    console.log('Copied to clipboard: ' + text);
+  });
+}
+</script>

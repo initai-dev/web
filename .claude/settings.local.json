@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mix phx.new:*)",
+      "Bash(mix deps.get:*)",
+      "Bash(mix compile)",
+      "Bash(mix phx.server:*)",
+      "Read(//c/Git/initai-dev/web/**)",
+      "Bash(unzip:*)",
+      "Bash(make:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

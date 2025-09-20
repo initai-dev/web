@@ -1,0 +1,62 @@
+<div class="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item">
+          <span class="text-muted"><%= String.capitalize(@llm) %></span>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+          <%= String.capitalize(@framework) %>
+        </li>
+      </ol>
+    </nav>
+    <h1 class="h2 mt-2 mb-0"><%= String.capitalize(@framework) %> Documentation</h1>
+    <p class="text-muted mb-0">
+      <%= String.capitalize(@llm) %> integration guides and examples
+    </p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <%= if Enum.empty?(@content_list) do %>
+      <div class="text-center py-5">
+        <div class="mb-4">
+          <i class="bi bi-file-text display-1 text-muted"></i>
+        </div>
+        <h3 class="text-muted">No Content Available</h3>
+        <p class="text-muted">
+          There are no documentation files available for <%= String.capitalize(@llm) %> + <%= String.capitalize(@framework) %> yet.
+        </p>
+      </div>
+    <% else %>
+      <div class="row g-3">
+        <%= for content <- @content_list do %>
+          <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body">
+                <div class="d-flex align-items-start">
+                  <div class="me-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2">
+                      <i class="bi bi-file-text text-primary"></i>
+                    </div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h5 class="card-title">
+                      <a href={"/" <> @llm <> "/" <> @framework <> "/" <> content} class="text-decoration-none stretched-link">
+                        <%= content |> String.replace("-", " ") |> String.replace("_", " ") |> String.split(" ") |> Enum.map(&String.capitalize/1) |> Enum.join(" ") %>
+                      </a>
+                    </h5>
+                    <p class="card-text text-muted small mb-0">
+                      Documentation for <%= content %>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

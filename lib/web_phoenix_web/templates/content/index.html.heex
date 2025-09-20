@@ -1,0 +1,15 @@
+<div class="content-index">
+  <h1>Content Index</h1>
+
+  <%= if Enum.empty?(@content_list) do %>
+    <p>No content available yet.</p>
+  <% else %>
+    <ul class="content-list">
+      <%= for content_path <- @content_list do %>
+        <li>
+          <%= link content_path, to: Routes.content_path(@conn, :show, [content_path]), class: "content-link" %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

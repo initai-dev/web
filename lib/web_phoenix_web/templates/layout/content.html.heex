@@ -1,0 +1,80 @@
+<div class="container-fluid">
+  <div class="row">
+    <!-- Left Sidebar Menu -->
+    <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse" id="sidebarMenu">
+      <div class="position-sticky pt-3">
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+          <span>LLM Models</span>
+        </h6>
+
+        <%= for llm_data <- WebPhoenix.Markdown.get_menu_structure() do %>
+          <ul class="nav flex-column mb-3">
+            <li class="nav-item">
+              <div class="nav-link fw-bold text-dark d-flex align-items-center">
+                <i class="bi bi-chevron-down me-2"></i>
+                <%= String.capitalize(llm_data.name) %>
+              </div>
+              <ul class="nav flex-column ms-3">
+                <!-- LLM direct files (e.g., installation) -->
+                <%= for file <- llm_data.files do %>
+                  <li class="nav-item">
+                    <a class={"nav-link text-muted py-1 " <> if assigns[:current_llm] == llm_data.name && assigns[:current_file] == file, do: "active", else: ""} href={"/" <> llm_data.name <> "/" <> file}>
+                      <i class="bi bi-download me-2"></i><%= file |> String.replace("-", " ") |> String.replace("_", " ") |> String.split(" ") |> Enum.map(&String.capitalize/1) |> Enum.join(" ") %>
+                    </a>
+                  </li>
+                <% end %>
+
+                <!-- Frameworks -->
+                <%= for framework <- llm_data.frameworks do %>
+                  <li class="nav-item">
+                    <a class={"nav-link text-muted py-1 " <> if assigns[:current_llm] == llm_data.name && assigns[:current_framework] == framework.name, do: "active", else: ""} href={"/" <> llm_data.name <> "/" <> framework.name}>
+                      <i class="bi bi-file-text me-2"></i><%= String.capitalize(framework.name) %>
+                    </a>
+                    <%= if assigns[:current_llm] == llm_data.name && assigns[:current_framework] == framework.name && !Enum.empty?(framework.content) do %>
+                      <ul class="nav flex-column ms-4">
+                        <%= for content <- framework.content do %>
+                          <li class="nav-item">
+                            <a class="nav-link text-muted py-1 small" href={"/" <> llm_data.name <> "/" <> framework.name <> "/" <> content}>
+                              <i class="bi bi-dash me-1"></i><%= content |> String.replace("-", " ") |> String.replace("_", " ") |> String.split(" ") |> Enum.map(&String.capitalize/1) |> Enum.join(" ") %>
+                            </a>
+                          </li>
+                        <% end %>
+                      </ul>
+                    <% end %>
+                  </li>
+                <% end %>
+              </ul>
+            </li>
+          </ul>
+        <% end %>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+      <!-- Mobile toggle button -->
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom d-md-none">
+        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+          <i class="bi bi-list"></i>
+        </button>
+      </div>
+
+      <%= if get_flash(@conn, :info) do %>
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+          <%= get_flash(@conn, :info) %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+      <%= if get_flash(@conn, :error) do %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= get_flash(@conn, :error) %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+
+      <div class="content-main">
+        <%= @inner_content %>
+      </div>
+    </main>
+  </div>
+</div>
