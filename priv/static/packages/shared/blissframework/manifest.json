@@ -1,0 +1,15 @@
+{
+  "name": "Bliss Framework",
+  "version": "1.0.0",
+  "description": "Universal framework for enhanced development productivity",
+  "type": "universal",
+  "files": [
+    "init.md",
+    "templates/component.md",
+    "templates/api.md"
+  ],
+  "compatibility": {
+    "llms": ["universal", "claude", "gemini", "gpt"],
+    "languages": ["javascript", "typescript", "python", "java"]
+  }
+}

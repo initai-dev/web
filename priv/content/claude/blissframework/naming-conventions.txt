@@ -1,0 +1,196 @@
+BLISS FRAMEWORK - CLAUDE CODE NAMING CONVENTIONS
+Version: 1.0.0
+Last Modified: 2025-01-19
+Priority: Critical
+
+=== CASING ===
+
+camelCase: variables, functions, methods
+PascalCase: classes, interfaces, components
+kebab-case: files, URLs, CSS
+SCREAMING_SNAKE: constants, env vars
+snake_case: database tables, columns
+
+=== FILES ===
+
+GOOD:
+- user-provider.ts
+- order-manager.ts
+- user-profile.component.svelte
+- user.test.ts
+
+BAD:
+- UserProvider.ts
+- orderMgr.ts
+- payment_service.ts
+
+=== FUNCTIONS ===
+
+CRUD:
+- getUserById()
+- createUser()
+- updateUser()
+- deleteUser()
+
+BOOLEAN:
+- isValid()
+- hasPermission()
+- canAccess()
+
+ASYNC:
+- fetchUsers()
+- saveData()
+
+CATEGORIES:
+- get/fetch: retrieve (get=sync, fetch=async)
+- create/add: new entities
+- update/modify: change existing
+- delete/remove: delete entities
+- validate: check validity
+- parse: convert formats
+- map: transform structures
+
+=== VARIABLES ===
+
+GOOD:
+- userAccountBalance
+- isUserLoggedIn
+- maxRetryAttempts
+
+BAD:
+- balance
+- loggedIn
+- max
+
+COLLECTIONS:
+- users[] (plural)
+- userList[]
+- userById (Map)
+- uniqueUserIds (Set)
+
+=== CLASSES ===
+
+SERVICES:
+- UserProvider
+- OrderManager
+- PaymentService
+
+MODELS:
+- User
+- Order
+- Payment
+
+HELPERS:
+- DateHelper
+- ValidationHelper
+
+=== DATABASE ===
+
+TABLES:
+- users
+- user_accounts
+- order_items
+
+COLUMNS:
+- user_id
+- email_address
+- created_at
+- is_active
+
+INDEXES:
+- idx_users_email
+- idx_orders_user_id
+
+=== CONSTANTS ===
+
+APP:
+- MAX_LOGIN_ATTEMPTS = 3
+- DEFAULT_PAGE_SIZE = 20
+- API_BASE_URL
+
+ERRORS:
+- ERROR_USER_NOT_FOUND
+- ERROR_INVALID_CREDENTIALS
+
+ENUMS:
+```
+enum UserStatus {
+    Active = 'active',
+    Inactive = 'inactive'
+}
+```
+
+=== COMPONENTS ===
+
+FILES:
+- UserProfile.svelte
+- OrderSummary.svelte
+
+PROPS:
+- userId: string
+- showActions: boolean
+- onUserUpdate: (user) => void
+
+=== API ===
+
+ENDPOINTS:
+- GET /api/users
+- GET /api/users/{id}
+- POST /api/users
+- PUT /api/users/{id}
+- DELETE /api/users/{id}
+
+ACTIONS:
+- POST /api/users/{id}/activate
+- POST /api/orders/{id}/cancel
+
+TYPES:
+- CreateUserRequest
+- UpdateOrderRequest
+- UserResponse
+
+=== ENV VARS ===
+
+FORMAT: COMPONENT_PURPOSE_DETAIL
+- DATABASE_CONNECTION_STRING
+- API_BASE_URL
+- JWT_SECRET_KEY
+
+ENVIRONMENT:
+- DEV_DATABASE_URL
+- PROD_DATABASE_URL
+
+=== TESTS ===
+
+FILES:
+- user-provider.test.ts
+- user.integration.test.ts
+- user.e2e.test.ts
+
+DESCRIBE:
+```
+describe('UserProvider', () => {
+    describe('getUserById', () => {
+        it('should return user when exists', () => {});
+        it('should return null when not exists', () => {});
+    });
+});
+```
+
+=== AVOID ===
+
+GENERIC:
+- data, result, thing
+- doStuff(), getData()
+
+MISLEADING:
+- getUsersAsync() (not async)
+- user = getUsers() (returns array)
+
+ABBREVIATIONS:
+- usrMgr, btnClk
+- usr, mgr, btn
+
+INCONSISTENT:
+- user_id (in JS)
+- UserID, userId, user_id (mixed)

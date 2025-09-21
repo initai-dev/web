@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    image: registry.km8.es/initai-web:production
+    container_name: initai-web
+    ports:
+      - "4000:4000"
+    environment:
+      - SECRET_KEY_BASE=pEqSeTP0nDVylgU222r5LhClx/GnhiiK49dI3UAcNKLg5vn0KIlAfCtaUqVzp/uV
+      - MIX_ENV=prod
+      - PHX_SERVER=true
+      - PORT=4000
+    restart: unless-stopped
+
+  # Optional: Add nginx proxy for production
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: initai-web-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf
+  #   depends_on:
+  #     - web
+  #   restart: unless-stopped

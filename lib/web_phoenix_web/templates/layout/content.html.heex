@@ -10,10 +10,10 @@
         <%= for llm_data <- WebPhoenix.Markdown.get_menu_structure() do %>
           <ul class="nav flex-column mb-3">
             <li class="nav-item">
-              <div class="nav-link fw-bold text-dark d-flex align-items-center">
+              <%!-- <div class="nav-link fw-bold text-dark d-flex align-items-center">
                 <i class="bi bi-chevron-down me-2"></i>
                 <%= String.capitalize(llm_data.name) %>
-              </div>
+              </div> --%>
               <ul class="nav flex-column ms-3">
                 <!-- LLM direct files (e.g., installation) -->
                 <%= for file <- llm_data.files do %>

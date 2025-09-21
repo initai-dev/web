@@ -19,9 +19,7 @@ Our initialization scripts provide a fully automated approach to LLM setup that 
 #
 # Select your framework:
 # [1] Bliss Framework (recommended)
-# [2] LangChain
-# [3] LlamaIndex
-# [4] Custom setup
+# [2] Custom setup
 ```
 
 Our detection system automatically identifies:
@@ -75,7 +73,7 @@ curl -sSL https://initai.dev/install.sh | bash -s -- --provider claude --framewo
 iwr -useb https://initai.dev/install.ps1 | iex
 
 # Or with options
-iwr -useb https://initai.dev/install.ps1 | iex; Install-LLM -Provider Gemini -Framework LangChain
+iwr -useb https://initai.dev/install.ps1 | iex; Install-LLM -Provider Gemini -Framework BlissFramework
 ```
 
 ### Python (Cross-platform)
@@ -113,11 +111,11 @@ curl -sSL https://initai.dev/install.py | python3 --venv
             --enable-extensions \
             --install-models local
 
-# LangChain with vector stores
+# Bliss Framework with enhanced features
 ./install.sh --provider gemini \
-            --framework langchain \
-            --vector-store pinecone \
-            --enable-memory
+            --framework bliss \
+            --enable-multimodal \
+            --optimize-performance
 ```
 
 ## Supported Platforms & Requirements

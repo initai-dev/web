@@ -1,0 +1,16 @@
+{
+  "name": "Bliss Framework - Claude",
+  "version": "1.0.0",
+  "description": "Claude-optimized framework for enhanced development productivity",
+  "type": "claude-optimized",
+  "files": [
+    "init.md",
+    "templates/claude-component.md",
+    "templates/claude-workflow.md"
+  ],
+  "compatibility": {
+    "llms": ["claude"],
+    "languages": ["javascript", "typescript", "python", "java"],
+    "features": ["structured-thinking", "multi-tool", "context-aware"]
+  }
+}

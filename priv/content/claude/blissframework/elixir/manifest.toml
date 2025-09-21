@@ -1,0 +1,10 @@
+[icon]
+source = "devicon"
+name = "elixir"
+variant = "plain"
+color = "#663399"
+
+[metadata]
+title = "Elixir"
+description = "Elixir and Phoenix development with Bliss Framework"
+priority = 2

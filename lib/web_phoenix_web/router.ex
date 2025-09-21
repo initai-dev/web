@@ -21,27 +21,24 @@ defmodule WebPhoenixWeb.Router do
     get "/content", ContentController, :index
     get "/content/*path", ContentController, :show
 
-    # New content structure: /[llm]/[framework]/[content]
-    get "/:llm/:framework", ContentController, :framework_index
-    get "/:llm/:framework/*path", ContentController, :framework_show
-
-    # LLM direct files: /[llm]/[file]
-    get "/:llm/:file", ContentController, :llm_show
-
     # Install script routes
     get "/install.sh", InstallController, :install_sh
     get "/install.ps1", InstallController, :install_ps1
     get "/install.py", InstallController, :install_py
 
-    # API routes
-    get "/manifest.json", InstallController, :manifest
 
-    # Framework file routes
-    get "/:llm/:framework/:file", InstallController, :framework_file
+    # New init endpoints (future-proof)
+    get "/init/:tenant/list", InitController, :list_packages
+    get "/init/:tenant/:framework", InitController, :download_package
+    get "/init/:tenant/:framework/:llm", InitController, :download_package
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", WebPhoenixWeb do
-  #   pipe_through :api
-  # end
+  # API routes
+  scope "/api", WebPhoenixWeb do
+    pipe_through :api
+
+    get "/version", ApiController, :version
+    get "/health", ApiController, :health
+    get "/check-updates", ApiController, :check_updates
+  end
 end

@@ -47,90 +47,80 @@
         Home
       </a>
 
-      <!-- LLM Sections -->
-      <div class="nav-section">
-        <button
-          class="nav-link text-white mb-2 d-flex align-items-center justify-content-between"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#claudeMenu"
-          aria-expanded={"#{if String.starts_with?(@conn.request_path, "/claude"), do: "true", else: "false"}"}
-        >
-          <span class="d-flex align-items-center">
-            <span class="me-2"><i class="fas fa-robot"></i></span>
-            Claude
-          </span>
-          <span class="ms-auto nav-arrow">
-            <i class="fas fa-chevron-right"></i>
-          </span>
-        </button>
+      <!-- Dynamic Menu Sections -->
+      <%= for {section, section_index} <- Enum.with_index(@content_list || []) do %>
+        <div class="nav-section">
+          <%= if section[:type] == :section do %>
+            <!-- Section with collapsible items -->
+            <button
+              class="nav-link text-white mb-2 d-flex align-items-center justify-content-between"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target={"#menu#{section_index}"}
+              aria-expanded={"#{is_section_active?(section, @conn.request_path)}"}
+            >
+              <span class="d-flex align-items-center">
+                <span class="me-2"><i class={"#{section[:icon] || "fas fa-folder"}"}></i></span>
+                <%= section[:title] %>
+              </span>
+              <span class="ms-auto nav-arrow">
+                <i class="fas fa-chevron-right"></i>
+              </span>
+            </button>
 
-        <div class={"collapse #{if String.starts_with?(@conn.request_path, "/claude"), do: "show"}"} id="claudeMenu">
-          <div class="nav-children ms-3">
-            <a href="/claude/installation" class={"nav-link text-white-75 mb-1 small #{if @conn.request_path == "/claude/installation", do: "active"}"}>
-              <i class="fas fa-download me-1"></i>
-              Installation
-            </a>
-            <a href="/claude/langchain" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/claude/langchain"), do: "active"}"}>
-              <i class="fas fa-link me-1"></i>
-              LangChain
-            </a>
-            <a href="/claude/llamaindex" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/claude/llamaindex"), do: "active"}"}>
-              <i class="fas fa-database me-1"></i>
-              LlamaIndex
-            </a>
-            <a href="/claude/blissframework" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/claude/blissframework"), do: "active"}"}>
-              <i class="fas fa-magic me-1"></i>
-              BlissFramework
-            </a>
-            <a href="/claude/custom" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/claude/custom"), do: "active"}"}>
-              <i class="fas fa-cog me-1"></i>
-              Custom
-            </a>
-          </div>
+            <div class={"collapse #{if is_section_active?(section, @conn.request_path), do: "show"}"} id={"menu#{section_index}"}>
+              <div class="nav-children ms-3">
+                <%= for item <- section[:items] || [] do %>
+                  <%= if item[:type] == :subsection do %>
+                    <!-- Subsection (like frameworks) -->
+                    <div class="mb-2">
+                      <a href={"#{item[:path]}"} class={"nav-link text-white-75 mb-1 small fw-bold #{if is_path_active?(item[:path], @conn.request_path), do: "active"}"}>
+                        <i class={"#{item[:icon]} me-1"}></i>
+                        <%= item[:title] %>
+                      </a>
+                      <!-- Subsection items -->
+                      <%= for subitem <- item[:items] || [] do %>
+                        <%= if subitem[:type] == :subsection do %>
+                          <!-- Third level subsection (like C#, Elixir) -->
+                          <div class={"ms-3 mb-2 framework-#{String.downcase(String.replace(subitem[:title], [" ", "+"], "-"))}"}>
+                            <a href={"#{subitem[:path]}"} class={"nav-link text-white-50 mb-1 small fw-bold #{if is_path_active?(subitem[:path], @conn.request_path), do: "active"}"}>
+                              <%= if String.contains?(subitem[:icon] || "", "devicon") do %>
+                                <i class={"#{subitem[:icon]} me-1"}></i>
+                              <% else %>
+                                <i class={"#{subitem[:icon]} me-1"} style={"color: #{subitem[:color] || "#6c757d"}"}></i>
+                              <% end %>
+                              <%= subitem[:title] %>
+                            </a>
+                            <!-- Third level items -->
+                            <%= for thirditem <- subitem[:items] || [] do %>
+                              <a href={"#{thirditem[:path]}"} class={"nav-link text-white-25 mb-1 small ms-3 #{if @conn.request_path == thirditem[:path], do: "active"}"}>
+                                <i class={"#{thirditem[:icon]} me-1"}></i>
+                                <%= thirditem[:title] %>
+                              </a>
+                            <% end %>
+                          </div>
+                        <% else %>
+                          <!-- Regular second level item -->
+                          <a href={"#{subitem[:path]}"} class={"nav-link text-white-50 mb-1 small ms-3 #{if @conn.request_path == subitem[:path], do: "active"}"}>
+                            <i class={"#{subitem[:icon]} me-1"}></i>
+                            <%= subitem[:title] %>
+                          </a>
+                        <% end %>
+                      <% end %>
+                    </div>
+                  <% else %>
+                    <!-- Regular item -->
+                    <a href={"#{item[:path]}"} class={"nav-link text-white-75 mb-1 small #{if @conn.request_path == item[:path], do: "active"}"}>
+                      <i class={"#{item[:icon]} me-1"}></i>
+                      <%= item[:title] %>
+                    </a>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
         </div>
-      </div>
-
-      <div class="nav-section">
-        <button
-          class="nav-link text-white mb-2 d-flex align-items-center justify-content-between"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#geminiMenu"
-          aria-expanded={"#{if String.starts_with?(@conn.request_path, "/gemini"), do: "true", else: "false"}"}
-        >
-          <span class="d-flex align-items-center">
-            <span class="me-2"><i class="fas fa-gem"></i></span>
-            Gemini
-          </span>
-          <span class="ms-auto nav-arrow">
-            <i class="fas fa-chevron-right"></i>
-          </span>
-        </button>
-
-        <div class={"collapse #{if String.starts_with?(@conn.request_path, "/gemini"), do: "show"}"} id="geminiMenu">
-          <div class="nav-children ms-3">
-            <a href="/gemini/installation" class={"nav-link text-white-75 mb-1 small #{if @conn.request_path == "/gemini/installation", do: "active"}"}>
-              <i class="fas fa-download me-1"></i>
-              Installation
-            </a>
-            <a href="/gemini/langchain" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/gemini/langchain"), do: "active"}"}>
-              <i class="fas fa-link me-1"></i>
-              LangChain
-            </a>
-            <a href="/gemini/llamaindex" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/gemini/llamaindex"), do: "active"}"}>
-              <i class="fas fa-database me-1"></i>
-              LlamaIndex
-            </a>
-            <a href="/gemini/custom" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/gemini/custom"), do: "active"}"}>
-              <i class="fas fa-cog me-1"></i>
-              Custom
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Additional sections can be added here -->
+      <% end %>
     </div>
   </nav>
 

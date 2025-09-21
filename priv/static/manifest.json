@@ -5,30 +5,14 @@
       "name": "Anthropic Claude",
       "description": "Advanced AI assistant from Anthropic",
       "frameworks": {
-        "bliss": {
+        "blissframework": {
           "name": "Bliss Framework",
           "description": "Developer happiness and rapid iteration",
           "version": "1.0.0",
           "files": [
             "general-principles.txt",
             "architecture-patterns.txt",
-            "naming-conventions.txt",
-            "project-templates.txt",
-            "common-solutions.txt",
-            "init-script.txt"
-          ]
-        },
-        "enterprise": {
-          "name": "Enterprise Framework",
-          "description": "Security and compliance focused",
-          "version": "1.0.0",
-          "files": [
-            "general-principles.txt",
-            "architecture-patterns.txt",
-            "naming-conventions.txt",
-            "project-templates.txt",
-            "common-solutions.txt",
-            "init-script.txt"
+            "naming-conventions.txt"
           ]
         }
       }
@@ -37,30 +21,14 @@
       "name": "Google Gemini",
       "description": "Google's advanced AI model",
       "frameworks": {
-        "bliss": {
+        "blissframework": {
           "name": "Bliss Framework",
           "description": "Streamlined development experience",
           "version": "1.0.0",
           "files": [
             "general-principles.txt",
             "architecture-patterns.txt",
-            "naming-conventions.txt",
-            "project-templates.txt",
-            "common-solutions.txt",
-            "init-script.txt"
-          ]
-        },
-        "enterprise": {
-          "name": "Enterprise Framework",
-          "description": "Corporate deployment ready",
-          "version": "1.0.0",
-          "files": [
-            "general-principles.txt",
-            "architecture-patterns.txt",
-            "naming-conventions.txt",
-            "project-templates.txt",
-            "common-solutions.txt",
-            "init-script.txt"
+            "naming-conventions.txt"
           ]
         }
       }

@@ -1,0 +1,91 @@
+{
+  "version": "2.0.0",
+  "release_date": "2025-09-21T15:00:00Z",
+  "installers": {
+    "bash": {
+      "version": "2.0.0",
+      "filename": "install.sh",
+      "url": "/install.sh",
+      "checksum": "",
+      "size": 0,
+      "platforms": ["linux", "macos", "wsl"],
+      "description": "Bash installer for Unix-like systems",
+      "features": [
+        "ZIP-based package downloads",
+        "LLM optimization selection",
+        "Automatic extraction and setup",
+        "Framework selection interface"
+      ]
+    },
+    "powershell": {
+      "version": "2.0.0",
+      "filename": "install.ps1",
+      "url": "/install.ps1",
+      "checksum": "",
+      "size": 0,
+      "platforms": ["windows"],
+      "description": "PowerShell installer for Windows systems",
+      "features": [
+        "ZIP-based package downloads",
+        "LLM optimization selection",
+        "Windows-native implementation"
+      ]
+    },
+    "python": {
+      "version": "2.0.0",
+      "filename": "install.py",
+      "url": "/install.py",
+      "checksum": "",
+      "size": 0,
+      "platforms": ["linux", "macos", "windows"],
+      "description": "Python installer for cross-platform compatibility",
+      "features": [
+        "Cross-platform support",
+        "ZIP-based package downloads",
+        "Python 3.6+ compatible"
+      ]
+    }
+  },
+  "api": {
+    "version": "2.0.0",
+    "endpoints": {
+      "packages": "/init/{tenant}/list",
+      "download": "/init/{tenant}/{framework}[/{llm}]",
+      "version_check": "/api/version"
+    },
+    "changes": [
+      "New URL structure: /init/{tenant}/{framework}[/{llm}]",
+      "ZIP-based package delivery",
+      "Universal vs LLM-specific frameworks",
+      "Improved error handling and user experience"
+    ]
+  },
+  "compatibility": {
+    "min_curl_version": "7.0.0",
+    "min_unzip_version": "6.0",
+    "supported_shells": ["bash", "zsh", "sh"],
+    "supported_platforms": ["linux", "macos", "windows"]
+  },
+  "changelog": [
+    {
+      "version": "2.0.0",
+      "date": "2025-09-21",
+      "changes": [
+        "Complete rewrite with ZIP-based architecture",
+        "New URL structure prioritizing frameworks over LLMs",
+        "Added LLM optimization selection",
+        "Improved user interface and error handling",
+        "Support for universal frameworks"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2025-09-20",
+      "changes": [
+        "Initial release",
+        "Individual file downloads",
+        "Basic LLM and framework selection"
+      ]
+    }
+  ]
+}

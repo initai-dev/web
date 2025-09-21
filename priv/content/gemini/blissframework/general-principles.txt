@@ -1,0 +1,19 @@
+# General Principles for Gemini Development
+
+## Core Values
+- Leverage Gemini's multimodal capabilities
+- Focus on clear, concise communication
+- Embrace visual and textual data integration
+- Prioritize user experience and accessibility
+
+## Development Approach
+- Start with simple, working solutions
+- Iterate based on user feedback
+- Test with multiple input types (text, images, code)
+- Document decisions and trade-offs
+
+## Code Quality
+- Write readable, maintainable code
+- Use meaningful variable and function names
+- Include comprehensive tests
+- Follow established style guides

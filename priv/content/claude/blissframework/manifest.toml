@@ -1,0 +1,9 @@
+[icon]
+source = "fontawesome"
+name = "fas fa-magic"
+color = "#6f42c1"
+
+[metadata]
+title = "Bliss Framework"
+description = "A comprehensive LLM initialization framework"
+priority = 1

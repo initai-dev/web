@@ -1,0 +1,10 @@
+[icon]
+source = "devicon"
+name = "svelte"
+variant = "plain"
+color = "#ff3e00"
+
+[metadata]
+title = "Vite + Svelte"
+description = "Modern frontend development with Vite and Svelte"
+priority = 3

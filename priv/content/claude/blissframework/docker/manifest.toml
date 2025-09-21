@@ -1,0 +1,10 @@
+[icon]
+source = "devicon"
+name = "docker"
+variant = "plain"
+color = "#0db7ed"
+
+[metadata]
+title = "Docker"
+description = "Containerization and deployment with Docker"
+priority = 4

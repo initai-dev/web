@@ -1,0 +1,25 @@
+# Naming Conventions for Gemini Projects
+
+## Variables and Functions
+- Use descriptive names that explain purpose
+- Prefix async functions with action verbs (fetch, process, analyze)
+- Use camelCase for JavaScript/TypeScript
+- Use snake_case for Python
+- Include data type in name when relevant (userImageUrl, textContent)
+
+## Files and Directories
+- Use kebab-case for file names (gemini-client.js)
+- Group related functionality in modules
+- Separate API calls from business logic
+- Use consistent file extensions (.js, .ts, .py)
+
+## API and Configuration
+- Use UPPER_CASE for environment variables (GEMINI_API_KEY)
+- Prefix configuration with service name (GEMINI_MODEL, GEMINI_TIMEOUT)
+- Use descriptive endpoint names (/api/gemini/analyze)
+- Version APIs explicitly (/api/v1/gemini)
+
+## Classes and Components
+- Use PascalCase for class names (GeminiClient, ImageProcessor)
+- Suffix utility classes with purpose (GeminiUtils, ResponseValidator)
+- Use clear component names (ChatInterface, ImageUploader)

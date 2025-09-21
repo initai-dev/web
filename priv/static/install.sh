@@ -17,12 +17,42 @@ NC='\033[0m' # No Color
 DEFAULT_BASE_URL="https://initai.dev"
 CONFIG_FILE=".initai.json"
 INITAI_DIR="initai"
+INSTALLER_VERSION="1.0.0"
 
 echo -e "${BLUE}🚀 initai.dev - LLM Framework Installer${NC}"
 echo "Initializing your development environment..."
 
+# Show version information and check for updates
+show_version_info() {
+    echo -e "${BLUE}🔍 initai.dev Installer Version Information${NC}"
+    echo -e "Current version: ${CYAN}${INSTALLER_VERSION}${NC}"
+    echo ""
+
+    echo -e "${YELLOW}📡 Checking for updates...${NC}"
+
+    local version_url="${BASE_URL}/api/check-updates?client_version=${INSTALLER_VERSION}"
+    local version_response=$(curl -s "$version_url" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$version_response" ]; then
+        # Parse JSON response using basic grep/sed (avoiding jq dependency)
+        local update_available=$(echo "$version_response" | grep -o '"update_available":[^,}]*' | sed 's/"update_available"://' | tr -d ' "')
+        local current_version=$(echo "$version_response" | grep -o '"current_version":"[^"]*"' | sed 's/"current_version":"//' | sed 's/"//')
+
+        if [ "$update_available" = "true" ]; then
+            echo -e "${YELLOW}📦 Update available: ${CYAN}${current_version}${NC}"
+            echo -e "${BLUE}💡 To update, download the latest installer:${NC}"
+            echo -e "   ${CYAN}curl -sSL ${BASE_URL}/install.sh | bash${NC}"
+            echo ""
+        else
+            echo -e "${GREEN}✅ You have the latest version${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Could not check for updates (offline?)${NC}"
+    fi
+}
+
 # Parse command line arguments
-BASE_URL="$DEFAULT_BASE_URL"
+BASE_URL="${BASE_URL:-$DEFAULT_BASE_URL}"
 FORCE_SETUP=false
 
 while [[ $# -gt 0 ]]; do
@@ -41,9 +71,14 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --base-url URL    Custom base URL (default: https://initai.dev)"
             echo "  --force, -f       Force reconfiguration"
+            echo "  --version, -v     Show version and check for updates"
             echo "  --help, -h        Show this help"
             echo ""
             echo "Configuration file: $CONFIG_FILE"
+            exit 0
+            ;;
+        --version|-v)
+            show_version_info
             exit 0
             ;;
         *)
@@ -61,8 +96,8 @@ check_dependencies() {
         exit 1
     fi
 
-    if ! command -v python3 >/dev/null 2>&1; then
-        echo -e "${RED}❌ python3 is required but not installed${NC}"
+    if ! command -v unzip >/dev/null 2>&1; then
+        echo -e "${RED}❌ unzip is required but not installed${NC}"
         exit 1
     fi
 }
@@ -78,166 +113,130 @@ load_config() {
     fi
 }
 
-# Download manifest from server
-download_manifest() {
-    local manifest_url="${BASE_URL}/manifest.json"
-    echo -e "${CYAN}📡 Downloading manifest from ${manifest_url}...${NC}"
-
-    if ! curl -sL "$manifest_url" -o ".manifest.json"; then
-        echo -e "${RED}❌ Failed to download manifest from ${manifest_url}${NC}"
-        exit 1
-    fi
-
-    # Verify manifest is valid JSON
-    if ! python3 -m json.tool ".manifest.json" > /dev/null 2>&1; then
-        echo -e "${RED}❌ Invalid manifest format${NC}"
-        rm -f ".manifest.json"
-        exit 1
-    fi
-
-    echo -e "${GREEN}✅ Manifest downloaded successfully${NC}"
-}
-
-# Interactive LLM selection
-select_llm() {
-    echo -e "\n${BLUE}🤖 Available LLMs:${NC}"
-
-    # Parse LLMs from manifest
-    local llms=($(python3 -c "
-import json
-with open('.manifest.json') as f:
-    data = json.load(f)
-    for llm in data['llms']:
-        print(llm)
-"))
-
-    local i=1
-    for llm in "${llms[@]}"; do
-        local name=$(python3 -c "
-import json
-with open('.manifest.json') as f:
-    data = json.load(f)
-    print(data['llms']['$llm']['name'])
-")
-        local desc=$(python3 -c "
-import json
-with open('.manifest.json') as f:
-    data = json.load(f)
-    print(data['llms']['$llm']['description'])
-")
-        echo -e "  ${CYAN}$i)${NC} $name - $desc"
-        ((i++))
-    done
-
-    echo -n -e "\n${YELLOW}Select LLM (1-${#llms[@]}): ${NC}"
-    read selection
-
-    if [[ $selection -ge 1 && $selection -le ${#llms[@]} ]]; then
-        echo "${llms[$((selection-1))]}"
-    else
-        echo -e "${RED}❌ Invalid selection${NC}"
-        exit 1
-    fi
-}
-
 # Interactive framework selection
 select_framework() {
-    local llm=$1
-    echo -e "\n${BLUE}⚡ Available frameworks for $llm:${NC}"
+    echo -e "\n${BLUE}📦 Available frameworks:${NC}" >&2
 
-    # Parse frameworks from manifest
-    local frameworks=($(python3 -c "
-import json
-with open('.manifest.json') as f:
-    data = json.load(f)
-    for fw in data['llms']['$llm']['frameworks']:
-        print(fw)
-"))
+    # For now, we only have blissframework
+    echo -e "  ${CYAN}1)${NC} Bliss Framework - Developer happiness and rapid iteration" >&2
 
-    local i=1
-    for fw in "${frameworks[@]}"; do
-        local name=$(python3 -c "
-import json
-with open('.manifest.json') as f:
-    data = json.load(f)
-    print(data['llms']['$llm']['frameworks']['$fw']['name'])
-")
-        local desc=$(python3 -c "
-import json
-with open('.manifest.json') as f:
-    data = json.load(f)
-    print(data['llms']['$llm']['frameworks']['$fw']['description'])
-")
-        echo -e "  ${CYAN}$i)${NC} $name - $desc"
-        ((i++))
-    done
-
-    echo -n -e "\n${YELLOW}Select framework (1-${#frameworks[@]}): ${NC}"
+    echo -n -e "\n${YELLOW}Select framework (1-1): ${NC}" >&2
     read selection
 
-    if [[ $selection -ge 1 && $selection -le ${#frameworks[@]} ]]; then
-        echo "${frameworks[$((selection-1))]}"
-    else
-        echo -e "${RED}❌ Invalid selection${NC}"
-        exit 1
-    fi
+    case $selection in
+        1)
+            echo "blissframework"
+            ;;
+        *)
+            echo -e "${RED}❌ Invalid selection${NC}" >&2
+            exit 1
+            ;;
+    esac
 }
 
-# Download framework files
-download_framework_files() {
-    local llm=$1
-    local framework=$2
-    local target_dir="${INITAI_DIR}/${llm}/${framework}"
+# Interactive LLM selection (optional)
+select_llm() {
+    echo -e "\n${BLUE}🤖 LLM optimization (optional):${NC}" >&2
 
-    echo -e "\n${YELLOW}📦 Downloading ${llm} ${framework} framework files...${NC}"
+    echo -e "  ${CYAN}1)${NC} Universal (works with all LLMs)" >&2
+    echo -e "  ${CYAN}2)${NC} Claude-optimized" >&2
+    echo -e "  ${CYAN}3)${NC} Gemini-optimized" >&2
+
+    echo -n -e "\n${YELLOW}Select LLM optimization (1-3) [1]: ${NC}" >&2
+    read selection
+
+    case $selection in
+        2)
+            echo "claude"
+            ;;
+        3)
+            echo "gemini"
+            ;;
+        1|"")
+            echo "universal"
+            ;;
+        *)
+            echo -e "${RED}❌ Invalid selection${NC}" >&2
+            exit 1
+            ;;
+    esac
+}
+
+# Download and extract framework package
+download_framework_package() {
+    local framework=$1
+    local llm=$2
+    local target_dir="${INITAI_DIR}/${framework}"
+
+    echo -e "\n${YELLOW}📦 Downloading ${framework} framework package (${llm} optimization)...${NC}"
 
     mkdir -p "$target_dir"
 
-    # Get file list from manifest
-    local files=($(python3 -c "
-import json
-with open('.manifest.json') as f:
-    data = json.load(f)
-    for file in data['llms']['$llm']['frameworks']['$framework']['files']:
-        print(file)
-"))
+    # Determine download URL based on LLM
+    local download_url
+    if [ "$llm" = "universal" ]; then
+        download_url="${BASE_URL}/init/shared/${framework}"
+    else
+        download_url="${BASE_URL}/init/shared/${framework}/${llm}"
+    fi
 
-    # Download each file
-    for file in "${files[@]}"; do
-        local file_url="${BASE_URL}/${llm}/${framework}/${file}"
-        local target_file="${target_dir}/${file}"
+    local zip_file="${target_dir}/package.zip"
 
-        echo -e "  ${CYAN}↓${NC} Downloading $file..."
-        if curl -sL "$file_url" -o "$target_file"; then
-            echo -e "    ${GREEN}✅${NC} $file"
+    echo -e "  ${CYAN}↓${NC} Downloading from ${download_url}..."
+    if curl -sL "$download_url" -o "$zip_file"; then
+        echo -e "    ${GREEN}✅${NC} Package downloaded"
+
+        echo -e "  ${CYAN}📂${NC} Extracting package..."
+        if unzip -q "$zip_file" -d "$target_dir"; then
+            rm "$zip_file"
+            echo -e "    ${GREEN}✅${NC} Package extracted"
+
+            # Check if manifest exists and show info
+            if [ -f "${target_dir}/manifest.json" ]; then
+                echo -e "  ${CYAN}📄${NC} Package manifest found"
+            fi
         else
-            echo -e "    ${RED}❌${NC} Failed to download $file"
+            echo -e "    ${RED}❌${NC} Failed to extract package"
+            rm -f "$zip_file"
+            exit 1
         fi
-    done
+    else
+        echo -e "    ${RED}❌${NC} Failed to download package from ${download_url}"
+        exit 1
+    fi
 }
 
 # Save configuration
 save_config() {
-    local llm=$1
-    local framework=$2
-    local version=$(python3 -c "
-import json
-with open('.manifest.json') as f:
-    data = json.load(f)
-    print(data['llms']['$llm']['frameworks']['$framework']['version'])
-")
+    local framework=$1
+    local llm=$2
 
     cat > "$CONFIG_FILE" << EOF
 {
   "base_url": "$BASE_URL",
-  "llm": "$llm",
   "framework": "$framework",
-  "version": "$version",
+  "llm": "$llm",
+  "version": "1.0.0",
   "last_updated": "$(date -Iseconds)"
 }
 EOF
 
     echo -e "${GREEN}✅ Configuration saved to $CONFIG_FILE${NC}"
+}
+
+# Check for updates automatically (silent)
+check_updates_silent() {
+    local version_url="${BASE_URL}/api/check-updates?client_version=${INSTALLER_VERSION}"
+    local version_response=$(curl -s "$version_url" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$version_response" ]; then
+        local update_available=$(echo "$version_response" | grep -o '"update_available":[^,}]*' | sed 's/"update_available"://' | tr -d ' "')
+        local current_version=$(echo "$version_response" | grep -o '"current_version":"[^"]*"' | sed 's/"current_version":"//' | sed 's/"//')
+
+        if [ "$update_available" = "true" ]; then
+            echo -e "${YELLOW}💡 Installer update available: ${current_version} (run with --version for details)${NC}"
+        fi
+    fi
 }
 
 # Main installation logic
@@ -247,44 +246,26 @@ main() {
 
     # Check if configuration exists
     if ! load_config; then
-        # Download manifest
-        download_manifest
-
         # Interactive setup
+        local framework=$(select_framework)
         local llm=$(select_llm)
-        local framework=$(select_framework "$llm")
 
-        echo -e "\n${BLUE}🎯 Selected: ${llm} ${framework} framework${NC}"
+        echo -e "\n${BLUE}🎯 Selected: ${framework} framework with ${llm} optimization${NC}"
 
-        # Download files
-        download_framework_files "$llm" "$framework"
+        # Download and extract package
+        download_framework_package "$framework" "$llm"
 
         # Save configuration
-        save_config "$llm" "$framework"
-
-        # Cleanup
-        rm -f ".manifest.json"
+        save_config "$framework" "$llm"
 
         echo -e "\n${GREEN}✅ Setup complete!${NC}"
-        echo -e "${YELLOW}📖 Framework files: ./${INITAI_DIR}/${llm}/${framework}/${NC}"
-        echo -e "${BLUE}💡 Tell your LLM: 'Load initialization files from ./${INITAI_DIR}/${llm}/${framework}/'${NC}"
+        echo -e "${YELLOW}📖 Framework files: ./${INITAI_DIR}/${framework}/${NC}"
+        echo -e "${BLUE}💡 Tell your LLM: 'Load initialization files from ./${INITAI_DIR}/${framework}/'${NC}"
     else
         # Load existing config
-        local current_llm=$(python3 -c "
-import json
-with open('$CONFIG_FILE') as f:
-    data = json.load(f)
-    print(data.get('llm', 'unknown'))
-")
-        local current_framework=$(python3 -c "
-import json
-with open('$CONFIG_FILE') as f:
-    data = json.load(f)
-    print(data.get('framework', 'unknown'))
-")
-
-        echo -e "${CYAN}Current configuration: ${current_llm} ${current_framework}${NC}"
-        echo -e "${BLUE}💡 Use --force to reconfigure${NC}"
+        if [ -f "$CONFIG_FILE" ]; then
+            echo -e "${CYAN}Use --force to reconfigure${NC}"
+        fi
     fi
 
     echo -e "\n${GREEN}🎉 Ready to code with initai.dev!${NC}"

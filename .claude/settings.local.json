@@ -7,7 +7,21 @@
       "Bash(mix phx.server:*)",
       "Read(//c/Git/initai-dev/web/**)",
       "Bash(unzip:*)",
-      "Bash(make:*)"
+      "Bash(make:*)",
+      "Bash(mix deps:*)",
+      "WebFetch(domain:hexdocs.pm)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:devicon.dev)",
+      "Bash(printf \"1\\n1\\n\")",
+      "Bash(timeout:*)",
+      "Bash(curl:*)",
+      "Bash(PORT=4001 mix phx.server)",
+      "Bash(BASE_URL=\"http://localhost:4000\" bash priv/static/install.sh --version)",
+      "Bash(mix phx.routes:*)",
+      "Read(//c/tmp/**)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,10 @@
+[icon]
+source = "devicon"
+name = "csharp"
+variant = "plain"
+color = "#239120"
+
+[metadata]
+title = "C#"
+description = "C# development with Bliss Framework"
+priority = 1

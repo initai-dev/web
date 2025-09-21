@@ -32,6 +32,41 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Documentation menu configuration
+config :web_phoenix, :menu_config,
+  # Fixed menu items (always shown in this order)
+  fixed_items: [
+    %{
+      type: :section,
+      title: "Getting Started",
+      icon: "fas fa-rocket",
+      items: [
+        %{title: "How It Works", path: "/content/how-it-works", icon: "fas fa-info-circle"}
+      ]
+    }
+  ],
+  # LLM provider configuration (dynamic content will be added under these)
+  llm_providers: [
+    %{
+      name: "claude",
+      title: "Claude",
+      icon: "fas fa-brain",
+      description: "Anthropic's Claude AI",
+      frameworks: ["blissframework"]
+    },
+    %{
+      name: "gemini",
+      title: "Gemini",
+      icon: "fas fa-gem",
+      description: "Google's Gemini AI",
+      frameworks: ["blissframework"]
+    }
+  ],
+  # Framework configuration
+  frameworks: %{
+    "blissframework" => %{title: "Bliss Framework", icon: "fas fa-magic", priority: 1}
+  }
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

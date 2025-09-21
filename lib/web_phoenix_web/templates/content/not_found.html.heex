@@ -1,5 +1,46 @@
-<div class="error-container">
-  <h1>Content Not Found</h1>
-  <p><%= @message %></p>
-  <%= link "Back to Content Index", to: Routes.content_path(@conn, :index), class: "btn btn-primary" %>
+<div class="text-center py-5">
+  <div class="mb-4">
+    <i class="fas fa-file-alt text-muted" style="font-size: 4rem;"></i>
+  </div>
+
+  <h1 class="h2 mb-3">Page Not Found</h1>
+  <p class="text-muted mb-4">
+    <%= @message || "The requested documentation page could not be found." %>
+  </p>
+
+  <%= if assigns[:suggested_pages] && !Enum.empty?(@suggested_pages) do %>
+    <div class="mb-4">
+      <h3 class="h5 mb-3">You might be looking for:</h3>
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <%= for page <- @suggested_pages do %>
+            <div class="card mb-2">
+              <div class="card-body py-2">
+                <a href={"#{page.path}"} class="text-decoration-none d-flex align-items-center">
+                  <i class={"#{page.icon} me-2 text-primary"}></i>
+                  <div class="text-start">
+                    <div class="fw-medium"><%= page.title %></div>
+                    <%= if page.description do %>
+                      <small class="text-muted"><%= page.description %></small>
+                    <% end %>
+                  </div>
+                </a>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="d-flex gap-2 justify-content-center">
+    <a href="/content" class="btn btn-primary">
+      <i class="fas fa-list me-1"></i>
+      Browse Documentation
+    </a>
+    <a href="/" class="btn btn-outline-secondary">
+      <i class="fas fa-home me-1"></i>
+      Back to Home
+    </a>
+  </div>
 </div>

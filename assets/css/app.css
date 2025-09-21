@@ -554,7 +554,7 @@ body.homepage {
   --docs-border: #dee2e6;
   --docs-body-color: #212529;
   --navbar-height: 56px;
-  --sidebar-width: 280px;
+  --sidebar-width: 320px;
   --footer-height: 60px;
 }
 
@@ -846,4 +846,62 @@ footer.text-white a:hover {
 
 .phx-loading {
   cursor: wait;
+}
+
+/* Navigation Menu Icon Colors */
+/* First level icons (sections) */
+.nav-section .nav-link > span > i {
+  color: #17a2b8; /* Info blue */
+}
+
+/* Second level icons (frameworks) - removed forced green color */
+
+/* Third level icons (languages) */
+.nav-section .nav-children .nav-children .nav-link i {
+  color: #ffc107; /* Warning yellow */
+}
+
+/* Fourth level icons (files) */
+.nav-section .nav-children .nav-children .nav-children .nav-link i {
+  color: #dc3545; /* Danger red */
+}
+
+/* Language-specific icon colors */
+.nav-link i.fa-code,
+.nav-link i.fa-laptop-code {
+  color: #6f42c1; /* Purple for programming */
+}
+
+.nav-link i.fa-database {
+  color: #fd7e14; /* Orange for data/database */
+}
+
+.nav-link i.fa-cogs,
+.nav-link i.fa-gear {
+  color: #6c757d; /* Gray for configuration */
+}
+
+.nav-link i.fa-docker {
+  color: #0db7ed; /* Docker blue */
+}
+
+.nav-link i.fa-folder {
+  color: #f8d7da; /* Light pink for folders */
+}
+
+/* Framework specific colors */
+.framework-c# i {
+  color: #239120; /* C# green */
+}
+
+.framework-elixir i {
+  color: #663399; /* Elixir purple */
+}
+
+.framework-vite-svelte i {
+  color: #ff3e00; /* Svelte orange */
+}
+
+.framework-docker i {
+  color: #0db7ed; /* Docker blue */
 }

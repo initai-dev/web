@@ -1,0 +1,23 @@
+# Architecture Patterns for Gemini Applications
+
+## Multimodal Architecture
+- Design systems that handle text, images, and mixed inputs seamlessly
+- Implement robust input validation for all media types
+- Create unified response handling for varied output formats
+
+## API Integration Patterns
+- Use async/await for Gemini API calls
+- Implement proper error handling and retries
+- Cache responses when appropriate
+- Handle rate limiting gracefully
+
+## Data Flow Patterns
+- Input processing pipeline: validate → transform → analyze
+- Response handling: parse → validate → format → deliver
+- Error propagation: capture → log → user-friendly messages
+
+## Scalability Considerations
+- Design for horizontal scaling
+- Implement proper logging and monitoring
+- Use connection pooling for API calls
+- Consider request batching for efficiency
