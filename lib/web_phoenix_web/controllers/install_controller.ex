@@ -31,6 +31,36 @@ defmodule WebPhoenixWeb.InstallController do
     end
   end
 
+  def initai_ps1(conn, _params) do
+    static_path = Path.join([Application.app_dir(:web_phoenix, "priv"), "static", "initai.ps1"])
+
+    case File.read(static_path) do
+      {:ok, content} ->
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(200, content)
+      {:error, _} ->
+        conn
+        |> put_status(:not_found)
+        |> send_resp(404, "Script not found")
+    end
+  end
+
+  def initai_sh(conn, _params) do
+    static_path = Path.join([Application.app_dir(:web_phoenix, "priv"), "static", "initai.sh"])
+
+    case File.read(static_path) do
+      {:ok, content} ->
+        conn
+        |> put_resp_content_type("text/plain")
+        |> send_resp(200, content)
+      {:error, _} ->
+        conn
+        |> put_status(:not_found)
+        |> send_resp(404, "Script not found")
+    end
+  end
+
   def install_py(conn, _params) do
     static_path = Path.join([Application.app_dir(:web_phoenix, "priv"), "static", "install.py"])
 

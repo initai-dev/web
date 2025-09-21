@@ -24,6 +24,8 @@ defmodule WebPhoenixWeb.Router do
     # Install script routes
     get "/install.sh", InstallController, :install_sh
     get "/install.ps1", InstallController, :install_ps1
+    get "/initai.ps1", InstallController, :initai_ps1
+    get "/initai.sh", InstallController, :initai_sh
     get "/install.py", InstallController, :install_py
 
 

@@ -109,7 +109,7 @@ The application serves:
 4. Content listing and navigation updates automatically
 
 ### Adding New Packages
-1. **Create package directory**: `priv/static/packages/shared/{framework}/`
+1. **Create package directory**: `priv/packages/shared/{framework}/`
 2. **Add universal files**: `init.md`, `manifest.json` in framework root
 3. **Add LLM-specific files**: Create `{llm}/` subdirectories with specialized files
 4. **Package discovery**: New packages automatically appear in `/init/shared/list` API
@@ -157,12 +157,12 @@ Key dependencies include:
 - Test configuration in `config/test.exs`
 
 ### Package Management System
-- **Package storage**: `priv/static/packages/shared/` - Framework files organized by LLM
+- **Package storage**: `priv/packages/shared/` - Framework files organized by LLM
 - **ZIP-based delivery**: Packages are dynamically created as ZIP files on request
 - **Universal vs LLM-specific**: Support for both universal frameworks and LLM-optimized versions
 - **Package structure**:
   ```
-  priv/static/packages/shared/
+  priv/packages/shared/
   ├── blissframework/
   │   ├── init.md              # Universal framework files
   │   ├── manifest.json

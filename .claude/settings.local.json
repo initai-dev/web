@@ -21,7 +21,9 @@
       "Bash(BASE_URL=\"http://localhost:4000\" bash priv/static/install.sh --version)",
       "Bash(mix phx.routes:*)",
       "Read(//c/tmp/**)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Read(//c/temp/**)",
+      "Bash(bash:*)"
     ],
     "deny": [],
     "ask": []

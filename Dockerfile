@@ -62,9 +62,10 @@ WORKDIR /app
 # Copy the release from build stage
 COPY --from=build --chown=appuser:appgroup /app/_build/prod/rel/web_phoenix ./
 
-# Copy static assets and content from build stage
+# Copy static assets, content, and packages from build stage
 COPY --from=build --chown=appuser:appgroup /app/priv/static ./priv/static
 COPY --from=build --chown=appuser:appgroup /app/priv/content ./priv/content
+COPY --from=build --chown=appuser:appgroup /app/priv/packages ./priv/packages
 
 # Switch to app user
 USER appuser

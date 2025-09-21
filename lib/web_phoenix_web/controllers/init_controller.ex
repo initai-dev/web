@@ -63,8 +63,8 @@ defmodule WebPhoenixWeb.InitController do
   """
   defp get_framework_files(framework, llm) do
     # Try specific LLM path first, then fallback to universal
-    specific_path = Path.join(["priv", "static", "packages", "shared", framework, llm])
-    universal_path = Path.join(["priv", "static", "packages", "shared", framework])
+    specific_path = Path.join(["priv", "packages", "shared", framework, llm])
+    universal_path = Path.join(["priv", "packages", "shared", framework])
 
     content_path = cond do
       llm != "universal" && File.dir?(specific_path) -> specific_path  # LLM-specific exists
@@ -193,7 +193,7 @@ defmodule WebPhoenixWeb.InitController do
   Get list of available packages - this will later query database
   """
   defp get_available_packages do
-    packages_dir = Path.join(["priv", "static", "packages", "shared"])
+    packages_dir = Path.join(["priv", "packages", "shared"])
 
     case File.ls(packages_dir) do
       {:ok, frameworks} ->
