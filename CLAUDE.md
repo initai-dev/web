@@ -59,6 +59,7 @@ The application serves:
 - Content is rendered using the Earmark library
 - Files are accessed via URL paths that map to markdown filenames
 - Content listing is available at `/content`
+- **IMPORTANT**: All pages except the homepage (index.html.heex) should be stored as markdown files in `priv/content/` and served through the documentation system using the docs layout
 
 ## Development Workflow
 

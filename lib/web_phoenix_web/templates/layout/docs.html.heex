@@ -1,0 +1,352 @@
+<!-- Top Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+  <div class="container-fluid">
+    <!-- Burger menu button -->
+    <button
+      class="navbar-toggler me-2 d-block"
+      type="button"
+      id="sidebarToggle"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Brand -->
+    <a class="navbar-brand text-white" href="/">
+      <strong>initai.dev</strong>
+      <small class="text-white-50 ms-2">LLM Init Scripts Hub</small>
+    </a>
+
+    <!-- Navigation actions -->
+    <div class="navbar-nav ms-auto d-flex flex-row">
+      <button class="nav-link text-white me-2" aria-label="Search">
+        <i class="fas fa-search"></i>
+      </button>
+
+      <a
+        class="nav-link text-white"
+        href="https://github.com/your-org/initai-dev"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="GitHub"
+      >
+        <i class="fab fa-github me-1"></i>
+        <span class="d-none d-md-inline">GitHub</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="d-flex main-wrapper">
+  <!-- Sidebar -->
+  <nav class="sidebar text-white p-0 collapse d-lg-block show" id="sidebarNav">
+    <div class="nav nav-pills flex-column p-3">
+      <!-- Home -->
+      <a href="/" class={"nav-link text-white mb-2 d-flex align-items-center #{if @conn.request_path == "/", do: "active"}"}>
+        <span class="me-2"><i class="fas fa-home"></i></span>
+        Home
+      </a>
+
+      <!-- LLM Sections -->
+      <div class="nav-section">
+        <button
+          class="nav-link text-white mb-2 d-flex align-items-center justify-content-between"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#claudeMenu"
+          aria-expanded={"#{if String.starts_with?(@conn.request_path, "/claude"), do: "true", else: "false"}"}
+        >
+          <span class="d-flex align-items-center">
+            <span class="me-2"><i class="fas fa-robot"></i></span>
+            Claude
+          </span>
+          <span class="ms-auto nav-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </span>
+        </button>
+
+        <div class={"collapse #{if String.starts_with?(@conn.request_path, "/claude"), do: "show"}"} id="claudeMenu">
+          <div class="nav-children ms-3">
+            <a href="/claude/installation" class={"nav-link text-white-75 mb-1 small #{if @conn.request_path == "/claude/installation", do: "active"}"}>
+              <i class="fas fa-download me-1"></i>
+              Installation
+            </a>
+            <a href="/claude/langchain" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/claude/langchain"), do: "active"}"}>
+              <i class="fas fa-link me-1"></i>
+              LangChain
+            </a>
+            <a href="/claude/llamaindex" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/claude/llamaindex"), do: "active"}"}>
+              <i class="fas fa-database me-1"></i>
+              LlamaIndex
+            </a>
+            <a href="/claude/blissframework" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/claude/blissframework"), do: "active"}"}>
+              <i class="fas fa-magic me-1"></i>
+              BlissFramework
+            </a>
+            <a href="/claude/custom" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/claude/custom"), do: "active"}"}>
+              <i class="fas fa-cog me-1"></i>
+              Custom
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <button
+          class="nav-link text-white mb-2 d-flex align-items-center justify-content-between"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#geminiMenu"
+          aria-expanded={"#{if String.starts_with?(@conn.request_path, "/gemini"), do: "true", else: "false"}"}
+        >
+          <span class="d-flex align-items-center">
+            <span class="me-2"><i class="fas fa-gem"></i></span>
+            Gemini
+          </span>
+          <span class="ms-auto nav-arrow">
+            <i class="fas fa-chevron-right"></i>
+          </span>
+        </button>
+
+        <div class={"collapse #{if String.starts_with?(@conn.request_path, "/gemini"), do: "show"}"} id="geminiMenu">
+          <div class="nav-children ms-3">
+            <a href="/gemini/installation" class={"nav-link text-white-75 mb-1 small #{if @conn.request_path == "/gemini/installation", do: "active"}"}>
+              <i class="fas fa-download me-1"></i>
+              Installation
+            </a>
+            <a href="/gemini/langchain" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/gemini/langchain"), do: "active"}"}>
+              <i class="fas fa-link me-1"></i>
+              LangChain
+            </a>
+            <a href="/gemini/llamaindex" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/gemini/llamaindex"), do: "active"}"}>
+              <i class="fas fa-database me-1"></i>
+              LlamaIndex
+            </a>
+            <a href="/gemini/custom" class={"nav-link text-white-75 mb-1 small #{if String.starts_with?(@conn.request_path, "/gemini/custom"), do: "active"}"}>
+              <i class="fas fa-cog me-1"></i>
+              Custom
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional sections can be added here -->
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="flex-fill overflow-auto">
+    <div class="container-fluid p-4">
+      <!-- Breadcrumbs -->
+      <%= if assigns[:breadcrumbs] && length(@breadcrumbs) > 1 do %>
+        <nav aria-label="breadcrumb" class="mb-3">
+          <ol class="breadcrumb">
+            <%= for {crumb, index} <- Enum.with_index(@breadcrumbs) do %>
+              <%= if index < length(@breadcrumbs) - 1 do %>
+                <li class="breadcrumb-item">
+                  <a href={elem(crumb, 1)}><%= elem(crumb, 0) %></a>
+                </li>
+              <% else %>
+                <li class="breadcrumb-item active" aria-current="page">
+                  <%= elem(crumb, 0) %>
+                </li>
+              <% end %>
+            <% end %>
+          </ol>
+        </nav>
+      <% end %>
+
+      <!-- Flash messages -->
+      <%= if get_flash(@conn, :info) do %>
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+          <%= get_flash(@conn, :info) %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+      <%= if get_flash(@conn, :error) do %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= get_flash(@conn, :error) %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+
+      <!-- Page content -->
+      <%= @inner_content %>
+    </div>
+  </main>
+</div>
+
+<!-- Footer -->
+<footer class="text-white text-center py-3">
+  <div class="container-fluid">
+    <small>
+      Made with ❤️ by <strong><a href="https://github.com/your-org" target="_blank" rel="noopener noreferrer" class="text-decoration-none">InitAI Team</a></strong>
+    </small>
+    <div class="mt-2">
+      <a href="https://github.com/your-org/initai-dev" target="_blank" rel="noopener noreferrer" class="text-white mx-2" aria-label="GitHub">
+        <i class="fab fa-github"></i>
+      </a>
+      <a href="https://twitter.com/yourorg" target="_blank" rel="noopener noreferrer" class="text-white mx-2" aria-label="Twitter">
+        <i class="fab fa-twitter"></i>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Sidebar toggle functionality with localStorage
+  const sidebarToggler = document.querySelector('#sidebarToggle');
+  const sidebar = document.querySelector('#sidebarNav');
+  const sidebarBackdrop = document.createElement('div');
+  const mainWrapper = document.querySelector('.main-wrapper');
+
+  // localStorage keys
+  const SIDEBAR_STATE_KEY = 'initai-sidebar-visible';
+
+  sidebarBackdrop.className = 'sidebar-backdrop d-lg-none';
+  sidebarBackdrop.style.display = 'none';
+  document.body.appendChild(sidebarBackdrop);
+
+  // Initialize sidebar state from localStorage
+  function initializeSidebarState() {
+    const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
+    const isVisible = savedState !== null ? savedState === 'true' : true; // default to visible
+
+    if (isVisible) {
+      sidebar.classList.add('show');
+      mainWrapper.classList.remove('sidebar-hidden');
+    } else {
+      sidebar.classList.remove('show');
+      mainWrapper.classList.add('sidebar-hidden');
+    }
+  }
+
+  // Save sidebar state to localStorage
+  function saveSidebarState(isVisible) {
+    localStorage.setItem(SIDEBAR_STATE_KEY, isVisible.toString());
+  }
+
+  function toggleSidebar() {
+    const isVisible = sidebar.classList.contains('show');
+
+    if (window.innerWidth < 992) { // Mobile behavior
+      if (isVisible) {
+        sidebar.classList.remove('show');
+        sidebarBackdrop.classList.remove('show');
+        setTimeout(() => {
+          sidebarBackdrop.style.display = 'none';
+        }, 300);
+        saveSidebarState(false);
+      } else {
+        sidebarBackdrop.style.display = 'block';
+        setTimeout(() => {
+          sidebar.classList.add('show');
+          sidebarBackdrop.classList.add('show');
+        }, 10);
+        saveSidebarState(true);
+      }
+    } else { // Desktop behavior
+      if (isVisible) {
+        sidebar.classList.remove('show');
+        mainWrapper.classList.add('sidebar-hidden');
+        saveSidebarState(false);
+      } else {
+        sidebar.classList.add('show');
+        mainWrapper.classList.remove('sidebar-hidden');
+        saveSidebarState(true);
+      }
+    }
+  }
+
+  function closeSidebarOnMobile() {
+    if (window.innerWidth < 992) {
+      sidebar.classList.remove('show');
+      sidebarBackdrop.classList.remove('show');
+      setTimeout(() => {
+        sidebarBackdrop.style.display = 'none';
+      }, 300);
+      saveSidebarState(false);
+    }
+  }
+
+  // Initialize sidebar state
+  initializeSidebarState();
+
+  // Toggle sidebar when burger menu is clicked
+  if (sidebarToggler) {
+    sidebarToggler.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleSidebar();
+    });
+  }
+
+  // Close sidebar when backdrop is clicked
+  sidebarBackdrop.addEventListener('click', closeSidebarOnMobile);
+
+  // Close sidebar when escape key is pressed
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeSidebarOnMobile();
+    }
+  });
+
+  // Close sidebar when navigation link is clicked on mobile
+  const navLinks = sidebar.querySelectorAll('a.nav-link');
+  navLinks.forEach(link => {
+    link.addEventListener('click', closeSidebarOnMobile);
+  });
+
+  // Arrow rotation for collapsed menus (Bootstrap independent)
+  const collapseButtons = document.querySelectorAll('[data-bs-toggle="collapse"]');
+  collapseButtons.forEach(button => {
+    const targetId = button.getAttribute('data-bs-target');
+    const target = document.querySelector(targetId);
+    const arrow = button.querySelector('.nav-arrow i');
+
+    if (target && arrow) {
+      // Initialize arrow state
+      if (target.classList.contains('show')) {
+        arrow.style.transform = 'rotate(90deg)';
+      }
+
+      target.addEventListener('show.bs.collapse', function() {
+        arrow.style.transform = 'rotate(90deg)';
+      });
+
+      target.addEventListener('hide.bs.collapse', function() {
+        arrow.style.transform = 'rotate(0deg)';
+      });
+    }
+  });
+
+  // Handle window resize
+  window.addEventListener('resize', function() {
+    if (window.innerWidth >= 992) {
+      // Desktop: hide backdrop, restore sidebar state from localStorage
+      sidebarBackdrop.classList.remove('show');
+      sidebarBackdrop.style.display = 'none';
+      sidebar.style.left = '';
+
+      // Restore desktop state from localStorage
+      const savedState = localStorage.getItem(SIDEBAR_STATE_KEY);
+      const isVisible = savedState !== null ? savedState === 'true' : true;
+
+      if (isVisible) {
+        sidebar.classList.add('show');
+        mainWrapper.classList.remove('sidebar-hidden');
+      } else {
+        sidebar.classList.remove('show');
+        mainWrapper.classList.add('sidebar-hidden');
+      }
+    } else {
+      // Mobile: ensure sidebar is properly positioned
+      mainWrapper.classList.remove('sidebar-hidden');
+      if (!sidebar.classList.contains('show')) {
+        sidebar.style.left = '';
+      }
+    }
+  });
+});
+</script>

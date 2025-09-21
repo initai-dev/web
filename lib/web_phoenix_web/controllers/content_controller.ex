@@ -35,15 +35,23 @@ defmodule WebPhoenixWeb.ContentController do
 
     case WebPhoenix.Markdown.get_content(full_path) do
       {:ok, html} ->
+        breadcrumbs = [
+          {"Home", "/"},
+          {String.capitalize(llm), "/#{llm}"},
+          {String.capitalize(framework), "/#{llm}/#{framework}"},
+          {format_title(normalized_path), ""}
+        ]
+
         conn
-        |> put_layout({WebPhoenixWeb.LayoutView, :content})
+        |> put_layout({WebPhoenixWeb.LayoutView, :docs})
         |> assign(:current_llm, llm)
         |> assign(:current_framework, framework)
+        |> assign(:breadcrumbs, breadcrumbs)
         |> assign(:content_list, WebPhoenix.Markdown.list_framework_content(llm, framework))
         |> render("framework_show.html", content: html, title: format_title(normalized_path), llm: llm, framework: framework)
       {:error, message} ->
         conn
-        |> put_layout({WebPhoenixWeb.LayoutView, :content})
+        |> put_layout({WebPhoenixWeb.LayoutView, :docs})
         |> put_status(:not_found)
         |> render("not_found.html", message: message)
     end
@@ -52,10 +60,17 @@ defmodule WebPhoenixWeb.ContentController do
   def framework_index(conn, %{"llm" => llm, "framework" => framework}) do
     content_list = WebPhoenix.Markdown.list_framework_content(llm, framework)
 
+    breadcrumbs = [
+      {"Home", "/"},
+      {String.capitalize(llm), "/#{llm}"},
+      {String.capitalize(framework), ""}
+    ]
+
     conn
-    |> put_layout({WebPhoenixWeb.LayoutView, :content})
+    |> put_layout({WebPhoenixWeb.LayoutView, :docs})
     |> assign(:current_llm, llm)
     |> assign(:current_framework, framework)
+    |> assign(:breadcrumbs, breadcrumbs)
     |> assign(:content_list, content_list)
     |> render("framework_index.html", content_list: content_list, llm: llm, framework: framework)
   end
@@ -72,14 +87,21 @@ defmodule WebPhoenixWeb.ContentController do
 
       case WebPhoenix.Markdown.get_content(full_path) do
         {:ok, html} ->
+          breadcrumbs = [
+            {"Home", "/"},
+            {String.capitalize(llm), "/#{llm}"},
+            {format_title(file), ""}
+          ]
+
           conn
-          |> put_layout({WebPhoenixWeb.LayoutView, :content})
+          |> put_layout({WebPhoenixWeb.LayoutView, :docs})
           |> assign(:current_llm, llm)
           |> assign(:current_file, file)
+          |> assign(:breadcrumbs, breadcrumbs)
           |> render("llm_show.html", content: html, title: format_title(file), llm: llm, file: file)
         {:error, message} ->
           conn
-          |> put_layout({WebPhoenixWeb.LayoutView, :content})
+          |> put_layout({WebPhoenixWeb.LayoutView, :docs})
           |> put_status(:not_found)
           |> render("not_found.html", message: message)
       end

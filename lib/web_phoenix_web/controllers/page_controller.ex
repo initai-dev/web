@@ -2,6 +2,9 @@ defmodule WebPhoenixWeb.PageController do
   use WebPhoenixWeb, :controller
 
   def index(conn, _params) do
-    render(conn, "index.html")
+    conn
+    |> assign(:body_class, "homepage")
+    |> render("index.html")
   end
+
 end
