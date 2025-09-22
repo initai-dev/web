@@ -1,0 +1,60 @@
+# Elixir build artifacts
+_build/
+deps/
+*.ez
+
+# Generated files
+erl_crash.dump
+*.beam
+
+# Phoenix artifacts
+priv/static/assets/
+
+# NPM artifacts
+node_modules/
+npm-debug.log*
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Development files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test/
+spec/
+
+# Coverage reports
+cover/
+coverage/
+
+# Logs
+*.log
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Other
+tmp/
+.tmp/

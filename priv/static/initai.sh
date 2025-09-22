@@ -17,6 +17,9 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+LIGHT_BLUE='\033[1;34m'
+LIGHT_CYAN='\033[1;36m'
+GRAY='\033[0;90m'
 NC='\033[0m' # No Color
 
 # Command line options
@@ -25,10 +28,17 @@ HELP=false
 UPDATE=false
 CLEAR=false
 CLEAR_ALL=false
+VERBOSE=false
 
 write_header() {
-    echo -e "${BLUE}initai.dev - LLM Framework Manager${NC}"
-    echo "Initializing your development environment..."
+    echo -e "${LIGHT_CYAN}initai.dev - LLM Framework Manager ${GRAY}v${CURRENT_VERSION}${NC}"
+    echo -e "${GRAY}Initializing your development environment...${NC}"
+}
+
+verbose_echo() {
+    if [ "$VERBOSE" = true ]; then
+        echo -e "$@"
+    fi
 }
 
 show_help() {
@@ -40,6 +50,7 @@ show_help() {
     echo "  --update         Force check for script updates"
     echo "  --clear          Remove initai folder and downloaded packages"
     echo "  --clear-all      Remove initai folder AND local .initai.json config"
+    echo "  --verbose        Show detailed progress messages"
     echo "  --help           Show this help"
     echo ""
     echo "Configuration file: $CONFIG_FILE"
@@ -54,7 +65,7 @@ test_dependencies() {
     fi
 
     if ! command -v jq >/dev/null 2>&1; then
-        echo -e "${YELLOW}WARNING: jq not found. JSON parsing will use basic methods.${NC}"
+        verbose_echo "${YELLOW}WARNING: jq not found. JSON parsing will use basic methods.${NC}"
     fi
 
     if ! command -v unzip >/dev/null 2>&1; then
@@ -105,13 +116,13 @@ json_get() {
 }
 
 test_script_update() {
-    echo -e "${CYAN}Checking for script updates...${NC}"
+    verbose_echo "${CYAN}Checking for script updates...${NC}"
 
     local update_url="$BASE_URL/api/check-updates?client_version=$CURRENT_VERSION&script=shell"
     local response
 
     if ! response=$(http_get "$update_url"); then
-        echo -e "${YELLOW}WARNING: Could not check for updates${NC}"
+        verbose_echo "${YELLOW}WARNING: Could not check for updates${NC}"
         return 1
     fi
 
@@ -130,7 +141,7 @@ test_script_update() {
             return 0
         fi
     else
-        echo -e "${GREEN}Script is up to date (v$CURRENT_VERSION)${NC}"
+        verbose_echo "${GREEN}Script is up to date (v$CURRENT_VERSION)${NC}"
     fi
 
     return 1
@@ -155,7 +166,7 @@ confirm_update() {
 update_script() {
     local update_info="$1"
 
-    echo -e "${YELLOW}Downloading script update...${NC}"
+    verbose_echo "${YELLOW}Downloading script update...${NC}"
 
     local download_url="$BASE_URL/initai.sh"
     local current_script="$0"
@@ -189,17 +200,17 @@ update_script() {
 
 test_configuration() {
     if [ -f "$CONFIG_FILE" ] && [ "$FORCE" != true ]; then
-        echo -e "${GREEN}Found existing configuration${NC}"
+        verbose_echo "${GREEN}Found existing configuration${NC}"
         return 0
     else
-        echo -e "${YELLOW}Setting up new configuration...${NC}"
+        verbose_echo "${YELLOW}Setting up new configuration...${NC}"
         return 1
     fi
 }
 
 get_available_packages() {
     local packages_url="$BASE_URL/init/shared/list"
-    echo -e "${CYAN}Getting available packages from $packages_url...${NC}"
+    verbose_echo "${CYAN}Getting available packages from $packages_url...${NC}"
 
     local response
     if ! response=$(http_get "$packages_url"); then
@@ -209,7 +220,7 @@ get_available_packages() {
 
     local total
     total=$(json_get "$response" "total")
-    echo -e "${GREEN}Found $total available packages${NC}"
+    verbose_echo "${GREEN}Found $total available packages${NC}"
 
     echo "$response"
 }
@@ -324,20 +335,20 @@ download_package() {
     local target_dir="$INITAI_DIR/$framework-$llm"
 
     echo ""
-    echo -e "${YELLOW}Downloading $framework ($llm) package...${NC}"
+    verbose_echo "${YELLOW}Downloading $framework ($llm) package...${NC}"
 
     mkdir -p "$target_dir"
 
     local full_download_url="$BASE_URL$download_url"
     local zip_file="$target_dir/package.zip"
 
-    echo -e "${CYAN}  Downloading from $full_download_url...${NC}"
+    verbose_echo "${CYAN}  Downloading from $full_download_url...${NC}"
     if ! http_get "$full_download_url" "$zip_file"; then
         echo -e "${RED}ERROR: Failed to download package${NC}"
         exit 1
     fi
 
-    echo -e "${CYAN}  Extracting package...${NC}"
+    verbose_echo "${CYAN}  Extracting package...${NC}"
     if ! (cd "$target_dir" && unzip -q package.zip); then
         echo -e "${RED}ERROR: Failed to extract package${NC}"
         exit 1
@@ -563,7 +574,7 @@ test_package_update() {
         return 1
     fi
 
-    echo -e "${CYAN}Checking for package updates...${NC}"
+    verbose_echo "${CYAN}Checking for package updates...${NC}"
 
     local framework llm
     framework=$(json_get "$config" "framework")
@@ -573,9 +584,9 @@ test_package_update() {
 
     # Simple check - just verify package still exists
     if http_get "$package_url" > /dev/null 2>&1; then
-        echo -e "${GREEN}Package check completed${NC}"
+        verbose_echo "${GREEN}Package check completed${NC}"
     else
-        echo -e "${YELLOW}Could not check for package updates${NC}"
+        verbose_echo "${YELLOW}Could not check for package updates${NC}"
     fi
 
     return 1  # For now, don't auto-update packages
@@ -634,6 +645,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --clear-all)
             CLEAR_ALL=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
             shift
             ;;
         *)

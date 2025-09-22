@@ -1,0 +1,15 @@
+# Ensure shell scripts always use LF line endings
+*.sh text eol=lf
+
+# Ensure PowerShell scripts use CRLF line endings
+*.ps1 text eol=crlf
+
+# Other text files use LF
+*.md text eol=lf
+*.json text eol=lf
+*.ex text eol=lf
+*.exs text eol=lf
+*.eex text eol=lf
+*.heex text eol=lf
+*.js text eol=lf
+*.css text eol=lf

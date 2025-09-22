@@ -7,7 +7,8 @@ param(
     [switch]$Help,
     [switch]$Update,
     [switch]$Clear,
-    [switch]$ClearAll
+    [switch]$ClearAll,
+    [switch]$Verbose
 )
 
 # Configuration
@@ -25,10 +26,25 @@ $Green = @{ ForegroundColor = "Green" }
 $Yellow = @{ ForegroundColor = "Yellow" }
 $Blue = @{ ForegroundColor = "Blue" }
 $Cyan = @{ ForegroundColor = "Cyan" }
+$LightCyan = @{ ForegroundColor = "Cyan"; Bold = $true }
+$Gray = @{ ForegroundColor = "DarkGray" }
+$White = @{ ForegroundColor = "White" }
 
 function Write-Header {
-    Write-Host "initai.dev - LLM Framework Installer" @Blue
-    Write-Host "Initializing your development environment..."
+    Write-Host "initai.dev - LLM Framework Manager " @LightCyan -NoNewline
+    Write-Host "v$CurrentVersion" @Gray
+    Write-Host "Initializing your development environment..." @Gray
+}
+
+function Write-VerboseMessage {
+    param([string]$Message, [hashtable]$Color = @{})
+    if ($Verbose) {
+        if ($Color.Count -gt 0) {
+            Write-Host $Message @Color
+        } else {
+            Write-Host $Message
+        }
+    }
 }
 
 function Show-Help {
@@ -40,6 +56,7 @@ function Show-Help {
     Write-Host "  -Update          Force check for script updates"
     Write-Host "  -Clear           Remove initai folder and downloaded packages"
     Write-Host "  -ClearAll        Remove initai folder AND local .initai.json config"
+    Write-Host "  -Verbose         Show detailed progress messages"
     Write-Host "  -Help            Show this help"
     Write-Host ""
     Write-Host "Configuration file: $ConfigFile"
@@ -62,7 +79,7 @@ function Initialize-AppData {
 }
 
 function Test-ScriptUpdate {
-    Write-Host "Checking for script updates..." @Cyan
+    Write-VerboseMessage "Checking for script updates..." @Cyan
 
     try {
         $updateUrl = "$BaseUrl/api/check-updates?client_version=$CurrentVersion&script=powershell"
@@ -83,7 +100,7 @@ function Test-ScriptUpdate {
         return $false
     }
     catch {
-        Write-Host "WARNING: Could not check for updates: $($_.Exception.Message)" @Yellow
+        Write-VerboseMessage "WARNING: Could not check for updates: $($_.Exception.Message)" @Yellow
         return $false
     }
 }
@@ -108,7 +125,7 @@ function Confirm-Update {
 function Update-Script {
     param($updateInfo)
 
-    Write-Host "Downloading script update..." @Yellow
+    Write-VerboseMessage "Downloading script update..." @Yellow
 
     try {
         # Download new initai.ps1 script
@@ -168,7 +185,7 @@ function Install-ScriptToAppData {
 
 function Test-Configuration {
     if ((Test-Path $ConfigFile) -and -not $Force) {
-        Write-Host "Found existing configuration" @Green
+        Write-VerboseMessage "Found existing configuration" @Green
         return $true
     } else {
         Write-Host "Setting up new configuration..." @Yellow
@@ -178,11 +195,11 @@ function Test-Configuration {
 
 function Get-AvailablePackages {
     $packagesUrl = "$BaseUrl/init/shared/list"
-    Write-Host "Getting available packages from $packagesUrl..." @Cyan
+    Write-VerboseMessage "Getting available packages from $packagesUrl..." @Cyan
 
     try {
         $response = Invoke-RestMethod -Uri $packagesUrl -UseBasicParsing
-        Write-Host "Found $($response.total) available packages" @Green
+        Write-VerboseMessage "Found $($response.total) available packages" @Green
         return $response.packages
     }
     catch {
@@ -279,7 +296,7 @@ function Download-Package {
 
     $targetDir = Join-Path $InitaiDir "$($package.framework)-$($package.llm)"
     Write-Host ""
-    Write-Host "Downloading $($package.framework) ($($package.llm)) package..." @Yellow
+    Write-VerboseMessage "Downloading $($package.framework) ($($package.llm)) package..." @Yellow
 
     if (-not (Test-Path $targetDir)) {
         New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
@@ -289,7 +306,7 @@ function Download-Package {
         $downloadUrl = "$BaseUrl$($package.download_url)"
         $zipFile = "$targetDir\package.zip"
 
-        Write-Host "  Downloading from $downloadUrl..." @Cyan
+        Write-VerboseMessage "  Downloading from $downloadUrl..." @Cyan
         Invoke-WebRequest -Uri $downloadUrl -OutFile $zipFile -UseBasicParsing
 
         Write-Host "  Extracting package..." @Cyan
@@ -683,7 +700,7 @@ function Test-PackageUpdate {
         return $false
     }
 
-    Write-Host "Checking for package updates..." @Cyan
+    Write-VerboseMessage "Checking for package updates..." @Cyan
 
     try {
         # Get current package info
