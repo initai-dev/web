@@ -6,7 +6,7 @@ Priority: Critical
 === COMMUNICATION ===
 
 LANGUAGE:
-- user: Czech
+- user: English
 - code/docs: English
 - commits: English
 - NO: mixing languages

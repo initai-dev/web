@@ -4,13 +4,9 @@
   "description": "Claude-optimized .NET framework for enhanced development productivity",
   "type": "claude-optimized",
   "files": [
-    "init.md",
     "architecture-patterns.txt",
     "general-principles.txt",
-    "naming-conventions.txt",
-    "templates/claude-controller.md",
-    "templates/claude-service.md",
-    "templates/claude-model.md"
+    "naming-conventions.txt"
   ],
   "compatibility": {
     "llms": ["claude"],

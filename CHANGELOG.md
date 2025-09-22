@@ -15,16 +15,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cross-platform installation scripts** - Enhanced Bash and PowerShell scripts with three-tier selection
 - **Comprehensive documentation** - Updated README.md with complete architecture overview
 - **Changelog button** - Fixed position changelog access button in top-right corner
+- **Bootstrap installer** - Separate install.ps1 for initial setup with PATH management
+- **PATH integration** - Automatic user PATH setup for global initai command access
+- **.NET package support** - Added dotnet scope with Claude-optimized guidance files
+- **Tenant system documentation** - Dedicated tenant-system.md for multi-tenant architecture
 
 ### Changed
 - **Package structure** - Migrated from `/init/{tenant}/{framework}` to `/init/{tenant}/{framework}/{scope}[/{llm}]`
 - **API response format** - Hierarchical structure with frameworks containing scopes containing variants
 - **Installation workflow** - Enhanced user experience with framework → scope → LLM selection flow
-- **CLAUDE.md template** - Added PROJECT.md workflow instructions and context management
+- **CLAUDE.md template** - Added PROJECT.md workflow and READ-ONLY initai/ folder instructions
+- **Configuration management** - Unified .initai.json with launch_claude preference integration
+- **Execution order** - Generate CLAUDE.md before launching Claude for proper context loading
+- **Branding consistency** - Standardized to lowercase "initai.dev" across all components
+
+### Fixed
+- **Color output issues** - Removed problematic Bold parameter from PowerShell color hashtables
+- **URL parsing errors** - Fixed BaseUrl parameter passing between install.ps1 and initai.ps1
+- **Configuration conflicts** - Eliminated duplicate .initai and .initai.json files
+- **Claude launch timing** - Fixed CLAUDE.md generation order to ensure instructions are available at startup
+- **PATH restart messaging** - Hide "Restart console" message when PATH already contains initai.dev
+- **Emoticon compatibility** - Replaced Unicode symbols with ASCII equivalents for broader terminal support
 
 ### Removed
 - **Backward compatibility code** - Removed all legacy two-tier support since no active users exist
 - **Quick start section** - Removed from installation scripts to reduce user confusion
+- **Duplicate configuration files** - Consolidated .initai text file into .initai.json structure
 
 ### Technical Details
 
@@ -42,9 +58,11 @@ Framework (blissframework)
 ```
 
 #### Enhanced Installation Scripts
-- **Bash (initai.sh)**: Added `select_scope()` function and Claude launch integration
-- **PowerShell (initai.ps1)**: Parallel implementation with `Select-Scope` and Claude detection
-- **Error handling**: Improved JSON parsing with fallback mechanisms
+- **Bootstrap installer (install.ps1)**: Separate installer with PATH management and smart restart messaging
+- **Bash (initai.sh)**: Added `select_scope()` function, unified config, and READ-ONLY folder instructions
+- **PowerShell (initai.ps1)**: Parallel implementation with `Select-Scope`, Claude detection, and color fixes
+- **Error handling**: Improved JSON parsing with fallback mechanisms and proper BaseUrl parameter passing
+- **Cross-platform sync**: Both scripts maintain identical functionality and user experience
 
 #### API Endpoints
 ```
@@ -59,11 +77,25 @@ GET /init/shared/{framework}/{scope}/{llm}               # LLM-specialized packa
 - Provides guidance for manual integration
 - Preserves user customizations
 
+#### .NET Package Support
+- **Universal dotnet package**: Basic .NET framework for all LLMs
+- **Claude-optimized package**: Specialized with architecture-patterns.txt, general-principles.txt, naming-conventions.txt
+- **Framework manifest**: Comprehensive compatibility metadata with features and language support
+- **Scope integration**: Seamless three-tier selection with backend/frontend/dotnet options
+
+#### PATH Integration & Bootstrap Installer
+- **Smart PATH detection**: Checks existing PATH before adding initai.dev directory
+- **User PATH modification**: Safe user-level PATH updates without requiring admin privileges
+- **Conditional restart messaging**: Only shows "Restart console" when PATH was actually modified
+- **Bootstrap workflow**: install.ps1 → download initai.ps1 → setup PATH → launch main script
+- **Global command access**: 'initai' command available from any directory after PATH setup
+
 #### Claude Code Integration
 - Automatic launch prompt for Claude selections
-- User preference persistence in `.initai` file
-- Context separation strategy with CLAUDE.md + PROJECT.md
-- Framework-specific instructions and workflows
+- User preference persistence in unified `.initai.json` file
+- Context separation strategy with CLAUDE.md (static) + PROJECT.md (dynamic)
+- Framework-specific instructions with READ-ONLY folder guidance
+- Proper execution order: Generate CLAUDE.md → Ask Claude launch → Launch with context available
 
 ### Development
 - Updated all controllers for three-tier routing

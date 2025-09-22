@@ -4,7 +4,6 @@
   "description": "Universal .NET framework for enhanced development productivity",
   "type": "universal",
   "files": [
-    "init.md",
     "templates/controller.md",
     "templates/service.md",
     "templates/model.md"
