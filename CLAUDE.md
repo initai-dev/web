@@ -43,14 +43,16 @@ This is a Phoenix web application (Elixir) that serves as a documentation and in
 - **Content directory**: `priv/content/` - Stores markdown files served by the application
 - **Content controller**: `lib/web_phoenix_web/controllers/content_controller.ex` - Serves markdown content as HTML
 
-#### Installation Scripts & Package System
+#### Installation Scripts & Three-Tier Package System
 - **Install controller**: `lib/web_phoenix_web/controllers/install_controller.ex` - Serves installation scripts
-- **Init controller**: `lib/web_phoenix_web/controllers/init_controller.ex` - Handles ZIP package downloads and package listing
+- **Init controller**: `lib/web_phoenix_web/controllers/init_controller.ex` - Handles ZIP package downloads and three-tier package listing
 - **API controller**: `lib/web_phoenix_web/controllers/api_controller.ex` - Version checking and health endpoints
+- **Three-tier architecture**: Framework → Scope → LLM specialization
 - **Routes**:
   - `/install.sh`, `/install.ps1`, `/install.py` - Platform-specific installation scripts
-  - `/init/{tenant}/list` - Lists available packages (e.g., `/init/shared/list`)
-  - `/init/{tenant}/{framework}[/{llm}]` - Downloads ZIP packages
+  - `/init/{tenant}/list` - Lists available frameworks with scopes and variants (e.g., `/init/shared/list`)
+  - `/init/{tenant}/{framework}/{scope}` - Downloads universal packages for scope
+  - `/init/{tenant}/{framework}/{scope}/{llm}` - Downloads LLM-specialized packages
   - `/api/check-updates?client_version=X&script=Y` - Script-specific update checking
   - `/api/version`, `/api/health` - System information endpoints
 
@@ -60,8 +62,9 @@ The application serves:
 - `/content` - Content listing
 - `/content/*path` - Dynamic markdown content serving
 - `/install.{sh,ps1,py}` - Installation scripts for different platforms
-- `/init/{tenant}/list` - Package listing API (JSON)
-- `/init/{tenant}/{framework}[/{llm}]` - ZIP package downloads
+- `/init/{tenant}/list` - Three-tier package listing API (JSON)
+- `/init/{tenant}/{framework}/{scope}` - Universal scope packages
+- `/init/{tenant}/{framework}/{scope}/{llm}` - LLM-specialized packages
 - `/api/*` - API endpoints (version, health, update checking)
 
 ### Content Management
@@ -156,48 +159,66 @@ Key dependencies include:
 - Run tests with `mix test` or `make test`
 - Test configuration in `config/test.exs`
 
-### Package Management System
-- **Package storage**: `priv/packages/shared/` - Framework files organized by LLM
+### Three-Tier Package Management System
+- **Package storage**: `priv/packages/shared/` - Framework files organized by scope and LLM
 - **ZIP-based delivery**: Packages are dynamically created as ZIP files on request
-- **Universal vs LLM-specific**: Support for both universal frameworks and LLM-optimized versions
+- **Three-tier architecture**: Framework → Scope (backend/frontend/fullstack) → LLM specialization
 - **Package structure**:
   ```
   priv/packages/shared/
   ├── blissframework/
-  │   ├── init.md              # Universal framework files
-  │   ├── manifest.json
-  │   └── claude/              # LLM-specific files
-  │       ├── init.md
-  │       └── manifest.json
+  │   ├── backend/              # Backend scope
+  │   │   ├── init.md          # Universal backend files
+  │   │   ├── manifest.json
+  │   │   └── claude/          # Claude-specific backend files
+  │   │       ├── init.md
+  │   │       └── manifest.json
+  │   └── frontend/            # Frontend scope
+  │       ├── init.md          # Universal frontend files
+  │       ├── manifest.json
+  │       └── claude/          # Claude-specific frontend files
+  │           ├── init.md
+  │           └── manifest.json
   ```
-- **Automatic discovery**: New packages are automatically detected and listed via API
+- **Automatic discovery**: New packages are automatically detected and listed via hierarchical API
+- **Scope-based organization**: Clear separation between backend, frontend, and fullstack development
 
 ### Installation Script Features
+- **Three-tier selection**: Framework → Scope → LLM specialization workflow
+- **Smart Claude integration**: Automatically prompts to launch Claude Code for Claude LLM selections
+- **Project context management**: Instructions for Claude to use PROJECT.md for ongoing context
 - **Self-updating mechanism**: Scripts check for updates and can update themselves
 - **Global user configuration**: `~/.initai` stores user preferences and usage statistics
-- **Smart defaults**: Remembers last selection and suggests most-used packages
+- **Local project preferences**: `.initai` in project directory stores Claude launch preferences
+- **Smart CLAUDE.md protection**: Asks before overwriting existing instruction files
 - **App data installation**: Scripts install to user's app data folder for global access
 - **Cross-platform support**: PowerShell (Windows), Bash (Unix), Python (cross-platform)
 - **Version tracking**: Each script type has independent versioning via `installer-manifest.json`
 
 ### API System
 - **Script-specific updates**: `/api/check-updates?client_version=X&script=Y`
-- **Package listing**: `/init/{tenant}/list` returns available packages with metadata
-- **ZIP downloads**: `/init/{tenant}/{framework}[/{llm}]` serves dynamic ZIP packages
+- **Three-tier package listing**: `/init/{tenant}/list` returns hierarchical framework/scope/variant structure
+- **Universal scope downloads**: `/init/{tenant}/{framework}/{scope}` serves universal packages
+- **Specialized downloads**: `/init/{tenant}/{framework}/{scope}/{llm}` serves LLM-optimized packages
 - **Health monitoring**: `/api/health` and `/api/version` for system status
 - **Installer manifest**: `priv/static/installer-manifest.json` defines script versions and features
 
 ## Recent Updates
-- **Major**: Implemented ZIP-based package delivery system
-- **Major**: Added self-updating installation scripts with global user preferences
-- **Major**: Created script-specific version checking API
-- **Feature**: Global user configuration with usage statistics and smart defaults
-- **Feature**: App data installation for cross-project accessibility
-- **Fix**: ZIP creation in Elixir (charlist filenames, binary content)
-- **Enhancement**: Removed legacy route conflicts and cleaned up router
-- Created Makefile for simplified development workflow
-- Redesigned homepage with floating hero layout
-- Removed top navigation for cleaner design
-- Updated background to dark blue gradient
-- Fixed flash message rendering (conditional display)
-- Improved responsive design with Bootstrap 5
+- **MAJOR**: Implemented three-tier architecture (Framework → Scope → LLM) replacing two-tier system
+- **MAJOR**: Added intelligent Claude Code integration with launch prompts for Claude selections
+- **MAJOR**: Project context management with CLAUDE.md/PROJECT.md separation for persistent context
+- **MAJOR**: Smart CLAUDE.md protection - prevents overwriting customized instruction files
+- **Feature**: Local `.initai` preferences file for Claude launch settings
+- **Feature**: Comprehensive warning system for file overwrite protection
+- **Enhancement**: Removed all backward compatibility code for cleaner implementation
+- **Enhancement**: Updated both Bash and PowerShell scripts for three-tier workflow
+- **Fix**: Hierarchical API response structure with frameworks/scopes/variants
+- **Fix**: Package directory naming convention: `framework-scope-llm`
+- Previous updates:
+  - Implemented ZIP-based package delivery system
+  - Added self-updating installation scripts with global user preferences
+  - Created script-specific version checking API
+  - Global user configuration with usage statistics and smart defaults
+  - App data installation for cross-project accessibility
+  - ZIP creation in Elixir (charlist filenames, binary content)
+  - Removed legacy route conflicts and cleaned up router

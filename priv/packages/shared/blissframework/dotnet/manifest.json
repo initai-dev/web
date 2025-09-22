@@ -1,0 +1,18 @@
+{
+  "name": "Bliss Framework - .NET",
+  "version": "1.0.0",
+  "description": "Universal .NET framework for enhanced development productivity",
+  "type": "universal",
+  "files": [
+    "init.md",
+    "templates/controller.md",
+    "templates/service.md",
+    "templates/model.md"
+  ],
+  "compatibility": {
+    "llms": ["universal", "claude", "gemini", "gpt"],
+    "languages": ["csharp", "fsharp"],
+    "frameworks": ["aspnet", "blazor", "maui", "wpf"],
+    "features": ["dependency-injection", "entity-framework", "minimal-apis"]
+  }
+}

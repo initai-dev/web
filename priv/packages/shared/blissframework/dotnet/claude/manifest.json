@@ -1,0 +1,29 @@
+{
+  "name": "Bliss Framework - .NET (Claude)",
+  "version": "1.0.0",
+  "description": "Claude-optimized .NET framework for enhanced development productivity",
+  "type": "claude-optimized",
+  "files": [
+    "init.md",
+    "architecture-patterns.txt",
+    "general-principles.txt",
+    "naming-conventions.txt",
+    "templates/claude-controller.md",
+    "templates/claude-service.md",
+    "templates/claude-model.md"
+  ],
+  "compatibility": {
+    "llms": ["claude"],
+    "languages": ["csharp", "fsharp"],
+    "frameworks": ["aspnet", "blazor", "maui", "wpf"],
+    "features": [
+      "claude-structured-thinking",
+      "claude-code-analysis",
+      "dependency-injection",
+      "entity-framework",
+      "minimal-apis",
+      "claude-naming-patterns",
+      "claude-architecture-guidance"
+    ]
+  }
+}

@@ -38,10 +38,11 @@ config :web_phoenix, :menu_config,
   fixed_items: [
     %{
       type: :section,
-      title: "Getting Started",
-      icon: "fas fa-rocket",
+      title: "Architecture",
+      icon: "fas fa-sitemap",
       items: [
-        %{title: "How It Works", path: "/content/how-it-works", icon: "fas fa-info-circle"}
+        %{title: "How It Works", path: "/content/how-it-works", icon: "fas fa-info-circle"},
+        %{title: "Tenant System", path: "/content/tenant-system", icon: "fas fa-building"}
       ]
     }
   ],

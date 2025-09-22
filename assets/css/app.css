@@ -905,3 +905,26 @@ footer.text-white a:hover {
 .framework-docker i {
   color: #0db7ed; /* Docker blue */
 }
+
+/* Changelog Button Positioning */
+.changelog-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.changelog-button .btn {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.changelog-button .btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
