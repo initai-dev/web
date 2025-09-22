@@ -8,7 +8,8 @@ param(
     [switch]$Update,
     [switch]$Clear,
     [switch]$ClearAll,
-    [switch]$Verbose
+    [switch]$Verbose,
+    [switch]$IgnoreSSLIssues
 )
 
 # Configuration
@@ -47,6 +48,43 @@ function Write-VerboseMessage {
     }
 }
 
+function Invoke-HttpRequest {
+    param(
+        [string]$Uri,
+        [string]$OutFile = $null,
+        [switch]$UseRestMethod
+    )
+
+    $params = @{
+        Uri = $Uri
+        UseBasicParsing = $true
+    }
+
+    if ($OutFile) {
+        $params.OutFile = $OutFile
+    }
+
+    if ($IgnoreSSLIssues) {
+        # Temporarily disable SSL certificate validation
+        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+        $params.SkipCertificateCheck = $true
+    }
+
+    try {
+        if ($UseRestMethod) {
+            return Invoke-RestMethod @params
+        } else {
+            return Invoke-WebRequest @params
+        }
+    }
+    finally {
+        if ($IgnoreSSLIssues) {
+            # Re-enable SSL certificate validation
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $null
+        }
+    }
+}
+
 function Show-Help {
     Write-Host "Usage: .\initai.ps1 [options]"
     Write-Host ""
@@ -57,6 +95,7 @@ function Show-Help {
     Write-Host "  -Clear           Remove initai folder and downloaded packages"
     Write-Host "  -ClearAll        Remove initai folder AND local .initai.json config"
     Write-Host "  -Verbose         Show detailed progress messages"
+    Write-Host "  -IgnoreSSLIssues Skip SSL certificate verification"
     Write-Host "  -Help            Show this help"
     Write-Host ""
     Write-Host "Configuration file: $ConfigFile"
@@ -83,7 +122,7 @@ function Test-ScriptUpdate {
 
     try {
         $updateUrl = "$BaseUrl/api/check-updates?client_version=$CurrentVersion&script=powershell"
-        $response = Invoke-RestMethod -Uri $updateUrl -UseBasicParsing
+        $response = Invoke-HttpRequest -Uri $updateUrl -UseRestMethod
 
         if ($response.update_available) {
             Write-Host "Update available: v$($response.current_version)" @Yellow
@@ -133,7 +172,7 @@ function Update-Script {
         $currentScript = $MyInvocation.ScriptName
         $tempScript = "$currentScript.new"
 
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $tempScript -UseBasicParsing
+        Invoke-HttpRequest -Uri $downloadUrl -OutFile $tempScript
 
         # Backup current script
         if (Test-Path $currentScript) {
@@ -195,121 +234,169 @@ function Test-Configuration {
 
 function Get-AvailablePackages {
     $packagesUrl = "$BaseUrl/init/shared/list"
-    Write-VerboseMessage "Getting available packages from $packagesUrl..." @Cyan
+    Write-VerboseMessage "Getting available frameworks from $packagesUrl..." @Cyan
 
     try {
-        $response = Invoke-RestMethod -Uri $packagesUrl -UseBasicParsing
-        Write-VerboseMessage "Found $($response.total) available packages" @Green
-        return $response.packages
+        $response = Invoke-HttpRequest -Uri $packagesUrl -UseRestMethod
+        Write-VerboseMessage "Found $($response.frameworks.Count) available frameworks" @Green
+        return $response.frameworks
     }
     catch {
-        Write-Host "ERROR: Failed to get packages from $packagesUrl" @Red
+        Write-Host "ERROR: Failed to get frameworks from $packagesUrl" @Red
         Write-Host $_.Exception.Message @Red
         exit 1
     }
 }
 
-function Select-LLM {
+function Select-Framework {
+    param($frameworks)
+
+    if ($frameworks.Count -eq 0) {
+        Write-Host "ERROR: No frameworks available" @Red
+        exit 1
+    }
+
     Write-Host ""
-    Write-Host "Which LLM will you primarily use in this project?" @Blue
-    Write-Host "  1) Claude (Anthropic) - Recommended for most development tasks" @Cyan
-    Write-Host "  2) Gemini (Google) - Great for research and analysis" @Cyan
-    Write-Host "  3) Universal - Works with any LLM" @Cyan
+    Write-Host "Which framework would you like to use?" @Blue
+
+    for ($i = 0; $i -lt $frameworks.Count; $i++) {
+        $framework = $frameworks[$i]
+        Write-Host "  $($i + 1)) $($framework.name)" @Cyan
+        Write-Host "     $($framework.description)"
+    }
 
     do {
-        $selection = Read-Host "`nSelect LLM (1-3)"
+        $selection = Read-Host "`nSelect framework (1-$($frameworks.Count))"
         $selectionNum = [int]$selection
-    } while ($selectionNum -lt 1 -or $selectionNum -gt 3)
+    } while ($selectionNum -lt 1 -or $selectionNum -gt $frameworks.Count)
 
-    switch ($selectionNum) {
-        1 { return "claude" }
-        2 { return "gemini" }
-        3 { return "universal" }
-    }
+    return $frameworks[$selectionNum - 1].name
 }
 
-function Select-Package {
-    param($packages, $preferredLLM)
+function Select-Scope {
+    param($frameworks, $selectedFramework)
 
-    # Filter packages by preferred LLM, fallback to universal
-    $filteredPackages = $packages | Where-Object { $_.llm -eq $preferredLLM }
-    if (-not $filteredPackages) {
-        $filteredPackages = $packages | Where-Object { $_.llm -eq "universal" }
+    # Find the selected framework
+    $framework = $frameworks | Where-Object { $_.name -eq $selectedFramework }
+    if (-not $framework) {
+        Write-Host "ERROR: Framework '$selectedFramework' not found" @Red
+        exit 1
     }
 
-    # Add usage statistics to packages
-    $packagesWithStats = Get-PackageUsageStats $filteredPackages
+    $scopes = $framework.scopes
+    if ($scopes.Count -eq 0) {
+        Write-Host "ERROR: No scopes available for $selectedFramework" @Red
+        exit 1
+    }
 
     Write-Host ""
-    Write-Host "Available packages for ${preferredLLM}:" @Blue
+    Write-Host "Which development scope for $selectedFramework?" @Blue
 
-    $i = 1
-    foreach ($package in $packagesWithStats) {
-        $displayName = if ($package.llm -eq "universal") {
-            "$($package.framework) (Universal)"
-        } else {
-            "$($package.framework) ($($package.llm))"
-        }
-
-        $usageText = ""
-        if ($package.usage_count -gt 0) {
-            $usageText = " - Used $($package.usage_count) times"
-            if ($i -eq 1) {
-                $usageText += " [MOST USED]"
-            }
-        }
-
-        Write-Host "  $i) $displayName$usageText" @Cyan
-        if ($package.usage_count -eq 0) {
-            Write-Host "     $($package.description)" @White
-        }
-        $i++
-    }
-
-    # If no packages found, show all packages
-    if ($packagesWithStats.Count -eq 0) {
-        Write-Host "No packages found for ${preferredLLM}, showing all packages..." @Yellow
-        $packagesWithStats = Get-PackageUsageStats $packages
-
-        $i = 1
-        foreach ($package in $packagesWithStats) {
-            $displayName = if ($package.llm -eq "universal") {
-                "$($package.framework) (Universal)"
-            } else {
-                "$($package.framework) ($($package.llm))"
-            }
-            Write-Host "  $i) $displayName" @Cyan
-            $i++
+    for ($i = 0; $i -lt $scopes.Count; $i++) {
+        $scope = $scopes[$i]
+        switch ($scope.name) {
+            "backend" { Write-Host "  $($i + 1)) Backend - Server-side development, APIs, databases" @Cyan }
+            "frontend" { Write-Host "  $($i + 1)) Frontend - Client-side development, UI/UX" @Cyan }
+            "fullstack" { Write-Host "  $($i + 1)) Fullstack - Complete application development" @Cyan }
+            default { Write-Host "  $($i + 1)) $($scope.name) - $($scope.description)" @Cyan }
         }
     }
 
     do {
-        $selection = Read-Host "`nSelect package (1-$($packagesWithStats.Count))"
+        $selection = Read-Host "`nSelect scope (1-$($scopes.Count))"
         $selectionNum = [int]$selection
-    } while ($selectionNum -lt 1 -or $selectionNum -gt $packagesWithStats.Count)
+    } while ($selectionNum -lt 1 -or $selectionNum -gt $scopes.Count)
 
-    return $packagesWithStats[$selectionNum - 1]
+    return $scopes[$selectionNum - 1].name
+}
+
+function Select-LLM {
+    param($frameworks, $selectedFramework, $selectedScope)
+
+    # Find the selected framework and scope
+    $framework = $frameworks | Where-Object { $_.name -eq $selectedFramework }
+    if (-not $framework) {
+        Write-Host "ERROR: Framework '$selectedFramework' not found" @Red
+        exit 1
+    }
+
+    $scope = $framework.scopes | Where-Object { $_.name -eq $selectedScope }
+    if (-not $scope) {
+        Write-Host "ERROR: Scope '$selectedScope' not found for $selectedFramework" @Red
+        exit 1
+    }
+
+    $variants = $scope.variants
+    if ($variants.Count -eq 0) {
+        Write-Host "ERROR: No LLM variants available for $selectedFramework/$selectedScope" @Red
+        exit 1
+    }
+
+    Write-Host ""
+    Write-Host "Which LLM will you use with $selectedFramework ($selectedScope)?" @Blue
+
+    for ($i = 0; $i -lt $variants.Count; $i++) {
+        $variant = $variants[$i]
+        switch ($variant.name) {
+            "claude" { Write-Host "  $($i + 1)) Claude (Anthropic) - $($variant.description)" @Cyan }
+            "gemini" { Write-Host "  $($i + 1)) Gemini (Google) - $($variant.description)" @Cyan }
+            "universal" { Write-Host "  $($i + 1)) Universal - $($variant.description)" @Cyan }
+            default { Write-Host "  $($i + 1)) $($variant.name) - $($variant.description)" @Cyan }
+        }
+    }
+
+    do {
+        $selection = Read-Host "`nSelect LLM (1-$($variants.Count))"
+        $selectionNum = [int]$selection
+    } while ($selectionNum -lt 1 -or $selectionNum -gt $variants.Count)
+
+    return $variants[$selectionNum - 1].name
+}
+
+function Find-DownloadUrl {
+    param($frameworks, $selectedFramework, $selectedScope, $selectedLLM)
+
+    # Find the selected framework and scope
+    $framework = $frameworks | Where-Object { $_.name -eq $selectedFramework }
+    if (-not $framework) {
+        Write-Host "ERROR: Framework '$selectedFramework' not found" @Red
+        exit 1
+    }
+
+    $scope = $framework.scopes | Where-Object { $_.name -eq $selectedScope }
+    if (-not $scope) {
+        Write-Host "ERROR: Scope '$selectedScope' not found for $selectedFramework" @Red
+        exit 1
+    }
+
+    $variant = $scope.variants | Where-Object { $_.name -eq $selectedLLM }
+    if (-not $variant) {
+        Write-Host "ERROR: LLM variant '$selectedLLM' not found for $selectedFramework/$selectedScope" @Red
+        exit 1
+    }
+
+    return $variant.download_url
 }
 
 function Download-Package {
-    param($package)
+    param($framework, $scope, $llm, $downloadUrl)
 
-    $targetDir = Join-Path $InitaiDir "$($package.framework)-$($package.llm)"
+    $targetDir = Join-Path $InitaiDir "$framework-$scope-$llm"
     Write-Host ""
-    Write-VerboseMessage "Downloading $($package.framework) ($($package.llm)) package..." @Yellow
+    Write-VerboseMessage "Downloading $framework ($scope) package for $llm..." @Yellow
 
     if (-not (Test-Path $targetDir)) {
         New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
     }
 
     try {
-        $downloadUrl = "$BaseUrl$($package.download_url)"
+        $fullDownloadUrl = "$BaseUrl$downloadUrl"
         $zipFile = "$targetDir\package.zip"
 
-        Write-VerboseMessage "  Downloading from $downloadUrl..." @Cyan
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $zipFile -UseBasicParsing
+        Write-VerboseMessage "  Downloading from $fullDownloadUrl..." @Cyan
+        Invoke-HttpRequest -Uri $fullDownloadUrl -OutFile $zipFile
 
-        Write-Host "  Extracting package..." @Cyan
+        Write-VerboseMessage "  Extracting package..." @Cyan
         Expand-Archive -Path $zipFile -DestinationPath $targetDir -Force
 
         # Remove the zip file
@@ -325,15 +412,20 @@ function Download-Package {
 }
 
 function Save-Configuration {
-    param($package, $targetDir, $preferredLLM)
+    param($framework, $scope, $llm, $targetDir)
+
+    $downloadUrl = "/init/shared/$framework/$scope"
+    if ($llm -ne "universal") {
+        $downloadUrl += "/$llm"
+    }
 
     $config = @{
         base_url = $BaseUrl
-        framework = $package.framework
-        llm = $package.llm
-        preferred_llm = $preferredLLM
-        description = $package.description
-        download_url = $package.download_url
+        framework = $framework
+        scope = $scope
+        llm = $llm
+        description = "$framework $scope development for $llm"
+        download_url = $downloadUrl
         target_dir = $targetDir
         last_updated = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
         script_version = $CurrentVersion
@@ -344,7 +436,7 @@ function Save-Configuration {
 }
 
 function Generate-LLMInstructions {
-    param($preferredLLM, $package, $targetDir)
+    param($preferredLLM, $framework, $scope, $targetDir)
 
     $llmFile = ""
     $content = ""
@@ -353,7 +445,13 @@ function Generate-LLMInstructions {
         "claude" {
             $llmFile = "CLAUDE.md"
             $content = @"
-# Claude Instructions for $($package.framework)
+# Claude Instructions for $framework ($scope)
+
+## Project Context Management
+- **Always save project context and notes to PROJECT.md**
+- CLAUDE.md contains only initialization instructions (don't modify)
+- Use PROJECT.md for ongoing project documentation, decisions, and context
+- Load PROJECT.md content at start of each session to continue where you left off
 
 ## Communication Style
 - Use bullet points for all responses
@@ -361,8 +459,9 @@ function Generate-LLMInstructions {
 - Focus on actionable information
 
 ## Project Setup
-- Framework: $($package.framework)
-- Package: $($package.llm)
+- Framework: $framework
+- Scope: $scope
+- LLM specialization: $preferredLLM
 - Initialization files: $targetDir
 
 ## Instructions
@@ -371,12 +470,19 @@ Please read and follow the initialization files in $targetDir on every session s
 - Load the framework configuration
 - Apply the coding standards and patterns
 - Use the provided templates and conventions
+- **Load PROJECT.md to understand current project state**
+
+## File Structure
+- CLAUDE.md - Initialization instructions (static - don't modify)
+- PROJECT.md - Your working context (dynamic - update regularly)
+- $targetDir/ - Framework files and templates
 
 ## Key Guidelines
 - Always use bullet format for responses
 - Prioritize developer productivity
 - Follow the framework's best practices
 - Maintain consistency across the project
+- **Save all project decisions and context to PROJECT.md**
 
 ---
 Generated by initai.dev on $(Get-Date -Format "yyyy-MM-dd")
@@ -385,7 +491,7 @@ Generated by initai.dev on $(Get-Date -Format "yyyy-MM-dd")
         "gemini" {
             $llmFile = "GEMINI.md"
             $content = @"
-# Gemini Instructions for $($package.framework)
+# Gemini Instructions for $framework ($scope)
 
 ## Communication Style
 - Use bullet points for all responses
@@ -393,8 +499,9 @@ Generated by initai.dev on $(Get-Date -Format "yyyy-MM-dd")
 - Focus on research and analysis
 
 ## Project Setup
-- Framework: $($package.framework)
-- Package: $($package.llm)
+- Framework: $framework
+- Scope: $scope
+- LLM specialization: $preferredLLM
 - Initialization files: $targetDir
 
 ## Instructions
@@ -417,7 +524,7 @@ Generated by initai.dev on $(Get-Date -Format "yyyy-MM-dd")
         "universal" {
             $llmFile = "LLM_INSTRUCTIONS.md"
             $content = @"
-# LLM Instructions for $($package.framework)
+# LLM Instructions for $framework ($scope)
 
 ## Communication Style
 - Use bullet points for all responses
@@ -425,8 +532,9 @@ Generated by initai.dev on $(Get-Date -Format "yyyy-MM-dd")
 - Focus on clear, actionable guidance
 
 ## Project Setup
-- Framework: $($package.framework)
-- Package: $($package.llm)
+- Framework: $framework
+- Scope: $scope
+- LLM specialization: $preferredLLM
 - Initialization files: $targetDir
 
 ## Instructions
@@ -449,6 +557,20 @@ Generated by initai.dev on $(Get-Date -Format "yyyy-MM-dd")
     }
 
     if ($content) {
+        # Check if LLM instruction file already exists
+        if (Test-Path $llmFile) {
+            Write-Host ""
+            $overwrite = Read-Host "$llmFile už existuje. Přepsat? (y/n)"
+            if ($overwrite -notmatch "^[yY]$") {
+                Write-Host "Ponecháván stávající $llmFile" @Cyan
+                Write-Host ""
+                Write-Host "UPOZORNĚNÍ: Ujistěte se, že váš $llmFile obsahuje instrukci:" @Yellow
+                Write-Host "`"Please read and follow the initialization files in $targetDir on every session start`"" @Blue
+                Write-Host ""
+                return
+            }
+        }
+
         try {
             $content | Set-Content $llmFile -Encoding UTF8
             Write-Host "Created $llmFile with project instructions" @Green
@@ -703,53 +825,23 @@ function Test-PackageUpdate {
     Write-VerboseMessage "Checking for package updates..." @Cyan
 
     try {
-        # Get current package info
-        $packageUrl = "$BaseUrl/init/$($config.tenant)/$($config.framework)/$($config.llm)"
+        # Build package URL
+        $packageUrl = "$BaseUrl/init/shared/$($config.framework)/$($config.scope)"
+        if ($config.llm -ne "universal") {
+            $packageUrl += "/$($config.llm)"
+        }
+
         $response = Invoke-RestMethod -Uri $packageUrl -UseBasicParsing -Method HEAD
 
         # Check if package has been updated (simple approach for now)
         # TODO: Add proper version checking when packages have version metadata
-        Write-Host "Package check completed" @Green
+        Write-VerboseMessage "Package check completed" @Green
         return $false  # For now, don't auto-update packages
     }
     catch {
-        Write-Host "Could not check for package updates: $($_.Exception.Message)" @Yellow
+        Write-VerboseMessage "Could not check for package updates: $($_.Exception.Message)" @Yellow
         return $false
     }
-}
-
-function Start-Claude {
-    param($config)
-
-    Write-Host ""
-    Write-Host "Starting Claude in console..." @Green
-
-    # Launch Claude Code CLI if available
-    try {
-        if (Get-Command claude-code -ErrorAction SilentlyContinue) {
-            Write-Host "Launching Claude Code CLI..." @Cyan
-            & claude-code
-        }
-        elseif (Get-Command claude -ErrorAction SilentlyContinue) {
-            Write-Host "Launching Claude CLI..." @Cyan
-            & claude
-        }
-        else {
-            Write-Host "Claude CLI not found. Please install Claude Code CLI:" @Yellow
-            Write-Host "Visit: https://claude.ai/code for installation instructions" @White
-        }
-    }
-    catch {
-        Write-Host "Could not launch Claude CLI: $($_.Exception.Message)" @Yellow
-        Write-Host "Please visit: https://claude.ai/code" @White
-    }
-
-    Write-Host ""
-    Write-Host "=== Quick Start ===" @Blue
-    Write-Host "1. Open your project files" @White
-    Write-Host "2. Load the framework configuration from: $($config.target_dir)" @White
-    Write-Host "3. Follow the instructions in your LLM-specific .md file" @White
-    Write-Host ""
 }
 
 # Main execution
@@ -780,47 +872,21 @@ function Main {
     }
 
     if (-not (Test-Configuration)) {
-        # New setup - ask for LLM preference first
-        $preferredLLM = Select-LLM
-        $selectedPackage = $null
+        # New setup - ask for framework, scope, then LLM
+        $frameworks = Get-AvailablePackages
 
-        # Try to use last selection if it matches preferred LLM
-        if (Show-LastSelectionPrompt) {
-            $globalConfig = Get-GlobalConfiguration
-            $lastSelection = $globalConfig.last_selection
-
-            # Check if last selection matches preferred LLM
-            if ($lastSelection.llm -eq $preferredLLM -or $preferredLLM -eq "universal") {
-                # Find the package that matches last selection
-                $packages = Get-AvailablePackages
-                $selectedPackage = $packages | Where-Object {
-                    $_.framework -eq $lastSelection.framework -and $_.llm -eq $lastSelection.llm
-                } | Select-Object -First 1
-
-                if (-not $selectedPackage) {
-                    Write-Host "WARNING: Last selection no longer available, showing packages for $preferredLLM..." @Yellow
-                } else {
-                    Write-Host "Using last selection (compatible with $preferredLLM)..." @Green
-                }
-            } else {
-                Write-Host "Last selection was for $($lastSelection.llm), showing packages for $preferredLLM..." @Yellow
-            }
-        }
-
-        # If no last selection or not compatible, show package selection
-        if (-not $selectedPackage) {
-            $packages = Get-AvailablePackages
-            $selectedPackage = Select-Package $packages $preferredLLM
-        }
+        $selectedFramework = Select-Framework $frameworks
+        $selectedScope = Select-Scope $frameworks $selectedFramework
+        $selectedLLM = Select-LLM $frameworks $selectedFramework $selectedScope
+        $downloadUrl = Find-DownloadUrl $frameworks $selectedFramework $selectedScope $selectedLLM
 
         Write-Host ""
-        Write-Host "Selected: $($selectedPackage.framework) ($($selectedPackage.llm)) for $preferredLLM" @Blue
+        Write-Host "Selected: $selectedFramework ($selectedScope) for $selectedLLM" @Blue
 
         try {
-            $targetDir = Download-Package $selectedPackage
-            Save-Configuration $selectedPackage $targetDir $preferredLLM
-            Update-GlobalConfiguration $selectedPackage
-            Generate-LLMInstructions $preferredLLM $selectedPackage $targetDir
+            $targetDir = Download-Package $selectedFramework $selectedScope $selectedLLM $downloadUrl
+            Save-Configuration $selectedFramework $selectedScope $selectedLLM $targetDir
+            Generate-LLMInstructions $selectedLLM $selectedFramework $selectedScope $targetDir
             Show-PackageInstructions $targetDir
 
             Write-Host ""
@@ -828,6 +894,37 @@ function Main {
             Write-Host "Framework files: .\$targetDir\" @Yellow
             Write-Host "LLM instructions: .\CLAUDE.md (or .\GEMINI.md)" @Yellow
             Write-Host "Tell your LLM: 'Load the initialization files and follow the project instructions'" @Blue
+
+            # Ask if user wants to launch Claude (only if Claude was selected)
+            if ($selectedLLM -eq "claude") {
+                Write-Host ""
+                $launchClaude = Read-Host "Spustit Claude? (y/n)"
+                if ($launchClaude -match "^[yY]$") {
+                    # Save preference and launch Claude
+                    "launch_claude=true" | Add-Content ".initai"
+                    try {
+                        if (Get-Command claude-code -ErrorAction SilentlyContinue) {
+                            Write-Host "Spouštím Claude Code..." @Cyan
+                            & claude-code
+                        }
+                        elseif (Get-Command claude -ErrorAction SilentlyContinue) {
+                            Write-Host "Spouštím Claude CLI..." @Cyan
+                            & claude
+                        }
+                        else {
+                            Write-Host "Claude CLI nebyl nalezen. Prosím nainstalujte Claude Code CLI:" @Yellow
+                            Write-Host "https://claude.ai/code" @White
+                        }
+                    }
+                    catch {
+                        Write-Host "Nepodařilo se spustit Claude CLI: $($_.Exception.Message)" @Yellow
+                        Write-Host "Prosím navštivte: https://claude.ai/code" @White
+                    }
+                }
+                else {
+                    "launch_claude=false" | Add-Content ".initai"
+                }
+            }
         }
         catch {
             Write-Host "ERROR: Setup failed: $($_.Exception.Message)" @Red
@@ -837,7 +934,7 @@ function Main {
         # Existing configuration - check for updates and show package instructions
         $config = Get-CurrentConfiguration
         if ($config) {
-            Write-Host "Current configuration: $($config.framework) ($($config.llm)) for $($config.preferred_llm)" @Cyan
+            Write-Host "Current configuration: $($config.framework) ($($config.scope)) for $($config.llm)" @Cyan
             Write-Host "Target directory: $($config.target_dir)" @Yellow
 
             # Check for package updates
@@ -847,14 +944,8 @@ function Main {
             Show-PackageInstructions $config.target_dir
 
             Write-Host "Use -Force to reconfigure" @Blue
-
-            # Launch Claude after configuration
-            Start-Claude $config
         }
     }
-
-    Write-Host ""
-    Write-Host "Ready to code with initai.dev!" @Green
 }
 
 # Run main function

@@ -23,7 +23,8 @@
       "Read(//c/tmp/**)",
       "Bash(powershell:*)",
       "Read(//c/temp/**)",
-      "Bash(bash:*)"
+      "Bash(bash:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

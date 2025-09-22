@@ -31,8 +31,8 @@ defmodule WebPhoenixWeb.Router do
 
     # New init endpoints (future-proof)
     get "/init/:tenant/list", InitController, :list_packages
-    get "/init/:tenant/:framework", InitController, :download_package
-    get "/init/:tenant/:framework/:llm", InitController, :download_package
+    get "/init/:tenant/:framework/:scope", InitController, :download_package
+    get "/init/:tenant/:framework/:scope/:llm", InitController, :download_package
   end
 
   # API routes

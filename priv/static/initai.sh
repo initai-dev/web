@@ -29,6 +29,7 @@ UPDATE=false
 CLEAR=false
 CLEAR_ALL=false
 VERBOSE=false
+IGNORE_SSL=false
 
 write_header() {
     echo -e "${LIGHT_CYAN}initai.dev - LLM Framework Manager ${GRAY}v${CURRENT_VERSION}${NC}"
@@ -51,6 +52,7 @@ show_help() {
     echo "  --clear          Remove initai folder and downloaded packages"
     echo "  --clear-all      Remove initai folder AND local .initai.json config"
     echo "  --verbose        Show detailed progress messages"
+    echo "  --ignore-ssl-issues  Skip SSL certificate verification"
     echo "  --help           Show this help"
     echo ""
     echo "Configuration file: $CONFIG_FILE"
@@ -85,16 +87,26 @@ http_get() {
     local output_file="$2"
 
     if command -v curl >/dev/null 2>&1; then
+        local curl_flags="-fsSL"
+        if [ "$IGNORE_SSL" = true ]; then
+            curl_flags="$curl_flags -k"
+        fi
+
         if [ -n "$output_file" ]; then
-            curl -fsSL "$url" -o "$output_file"
+            eval "curl $curl_flags \"$url\" -o \"$output_file\""
         else
-            curl -fsSL "$url"
+            eval "curl $curl_flags \"$url\""
         fi
     elif command -v wget >/dev/null 2>&1; then
+        local wget_flags="-q"
+        if [ "$IGNORE_SSL" = true ]; then
+            wget_flags="$wget_flags --no-check-certificate"
+        fi
+
         if [ -n "$output_file" ]; then
-            wget -q "$url" -O "$output_file"
+            eval "wget $wget_flags \"$url\" -O \"$output_file\""
         else
-            wget -q "$url" -O -
+            eval "wget $wget_flags \"$url\" -O -"
         fi
     else
         echo -e "${RED}ERROR: Neither curl nor wget found${NC}"
@@ -110,8 +122,8 @@ json_get() {
     if command -v jq >/dev/null 2>&1; then
         echo "$json" | jq -r ".$key // empty"
     else
-        # Basic JSON parsing using grep and sed
-        echo "$json" | grep -o "\"$key\":[^,}]*" | sed "s/\"$key\"://" | tr -d ' "' | sed 's/,$//'
+        # Basic JSON parsing using grep and sed (handle multiline JSON and spaces)
+        echo "$json" | tr -d '\n\r' | grep -o "\"$key\":[[:space:]]*\"[^\"]*\"" | sed "s/\"$key\":[[:space:]]*\"//" | sed 's/"$//'
     fi
 }
 
@@ -225,160 +237,305 @@ get_available_packages() {
     echo "$response"
 }
 
-select_llm() {
-    echo ""
-    echo -e "${BLUE}Which LLM will you primarily use in this project?${NC}"
-    echo -e "${CYAN}  1) Claude (Anthropic) - Recommended for most development tasks${NC}"
-    echo -e "${CYAN}  2) Gemini (Google) - Great for research and analysis${NC}"
-    echo -e "${CYAN}  3) Universal - Works with any LLM${NC}"
+select_framework() {
+    local api_response="$1"
 
-    while true; do
-        echo ""
-        read -p "Select LLM (1-3): " selection
-        case "$selection" in
-            1) echo "claude"; return ;;
-            2) echo "gemini"; return ;;
-            3) echo "universal"; return ;;
-            *) echo -e "${RED}Invalid selection. Please choose 1-3.${NC}" ;;
-        esac
-    done
-}
+    # Extract frameworks from new API structure
+    local frameworks=()
+    local framework_descriptions=()
 
-select_package() {
-    local packages_response="$1"
-    local preferred_llm="$2"
-
-    # Extract packages array from JSON (simplified)
-    local packages
     if command -v jq >/dev/null 2>&1; then
-        packages=$(echo "$packages_response" | jq -c '.packages[]')
+        local frameworks_json
+        frameworks_json=$(echo "$api_response" | jq -c '.frameworks[]')
+        while IFS= read -r framework_obj; do
+            if [ -n "$framework_obj" ]; then
+                local name description
+                name=$(echo "$framework_obj" | jq -r '.name')
+                description=$(echo "$framework_obj" | jq -r '.description')
+                frameworks+=("$name")
+                framework_descriptions+=("$description")
+            fi
+        done <<< "$frameworks_json"
     else
-        # Basic extraction - this is simplified and may need refinement
-        packages=$(echo "$packages_response" | grep -o '"framework":"[^"]*"[^}]*"llm":"[^"]*"[^}]*}' | sed 's/^/{/' | sed 's/$/}/')
-    fi
+        # Basic parsing without jq - simplified approach for nested structure
+        # Extract framework names from the flattened JSON
+        local framework_names
+        framework_names=$(echo "$api_response" | tr -d '\n\r' | grep -o '"frameworks":\[{[^]]*\]' | grep -o '"name":"[^"]*"' | head -1 | sed 's/"name":"//' | sed 's/"//')
 
-    # Filter packages by preferred LLM
-    local filtered_packages=()
-    local package_count=0
-
-    while IFS= read -r package; do
-        if [ -n "$package" ]; then
-            local package_llm
-            package_llm=$(json_get "$package" "llm")
-
-            if [ "$package_llm" = "$preferred_llm" ] || ([ "$preferred_llm" = "universal" ] && [ "$package_llm" = "universal" ]); then
-                filtered_packages+=("$package")
-                ((package_count++))
+        if [ -n "$framework_names" ]; then
+            frameworks+=("$framework_names")
+            framework_descriptions+=("Framework for enhanced development productivity")
+        else
+            # Fallback - extract the first framework name from anywhere in the response
+            local fallback_name
+            fallback_name=$(echo "$api_response" | grep -o '"name":"blissframework"' | head -1 | sed 's/"name":"//' | sed 's/"//')
+            if [ -n "$fallback_name" ]; then
+                frameworks+=("$fallback_name")
+                framework_descriptions+=("Framework for enhanced development productivity")
             fi
         fi
-    done <<< "$packages"
-
-    # If no packages found for preferred LLM, show all
-    if [ $package_count -eq 0 ]; then
-        echo -e "${YELLOW}No packages found for $preferred_llm, showing all packages...${NC}"
-        while IFS= read -r package; do
-            if [ -n "$package" ]; then
-                filtered_packages+=("$package")
-                ((package_count++))
-            fi
-        done <<< "$packages"
     fi
 
-    if [ $package_count -eq 0 ]; then
-        echo -e "${RED}ERROR: No packages available${NC}"
+    if [ ${#frameworks[@]} -eq 0 ]; then
+        echo -e "${RED}ERROR: No frameworks available${NC}" >&2
         exit 1
     fi
 
-    echo ""
-    echo -e "${BLUE}Available packages for $preferred_llm:${NC}"
+    echo "" >&2
+    echo -e "${BLUE}Which framework would you like to use?${NC}" >&2
 
     local i=1
-    for package in "${filtered_packages[@]}"; do
-        local framework description llm
-        framework=$(json_get "$package" "framework")
-        description=$(json_get "$package" "description")
-        llm=$(json_get "$package" "llm")
-
-        local display_name
-        if [ "$llm" = "universal" ]; then
-            display_name="$framework (Universal)"
-        else
-            display_name="$framework ($llm)"
-        fi
-
-        echo -e "${CYAN}  $i) $display_name${NC}"
-        echo "     $description"
+    for framework in "${frameworks[@]}"; do
+        local description="${framework_descriptions[$((i-1))]}"
+        echo -e "${CYAN}  $i) $framework${NC}" >&2
+        echo "     $description" >&2
         ((i++))
     done
 
     while true; do
-        echo ""
-        read -p "Select package (1-$package_count): " selection
-        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le $package_count ]; then
+        echo "" >&2
+        read -p "Select framework (1-${#frameworks[@]}): " selection
+        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le ${#frameworks[@]} ]; then
             local selected_index=$((selection - 1))
-            echo "${filtered_packages[$selected_index]}"
+            echo "${frameworks[$selected_index]}"
             return
         else
-            echo -e "${RED}Invalid selection. Please choose 1-$package_count.${NC}"
+            echo -e "${RED}Invalid selection. Please choose 1-${#frameworks[@]}.${NC}" >&2
         fi
     done
 }
 
+select_scope() {
+    local api_response="$1"
+    local selected_framework="$2"
+
+    # Extract scopes for the selected framework
+    local scopes=()
+    local scope_descriptions=()
+
+    if command -v jq >/dev/null 2>&1; then
+        local framework_obj
+        framework_obj=$(echo "$api_response" | jq -c ".frameworks[] | select(.name == \"$selected_framework\")")
+        if [ -n "$framework_obj" ]; then
+            local scopes_json
+            scopes_json=$(echo "$framework_obj" | jq -c '.scopes[]')
+            while IFS= read -r scope_obj; do
+                if [ -n "$scope_obj" ]; then
+                    local name description
+                    name=$(echo "$scope_obj" | jq -r '.name')
+                    description=$(echo "$scope_obj" | jq -r '.description')
+                    scopes+=("$name")
+                    scope_descriptions+=("$description")
+                fi
+            done <<< "$scopes_json"
+        fi
+    else
+        # Basic parsing without jq - simplified fallback for known structure
+        # For blissframework, we know it has backend and frontend scopes
+        if [ "$selected_framework" = "blissframework" ]; then
+            scopes+=("backend")
+            scope_descriptions+=("Server-side development and APIs")
+            scopes+=("frontend")
+            scope_descriptions+=("Client-side user interface development")
+        else
+            # Generic fallback
+            scopes+=("backend")
+            scope_descriptions+=("Server-side development")
+        fi
+    fi
+
+    if [ ${#scopes[@]} -eq 0 ]; then
+        echo -e "${RED}ERROR: No scopes available for $selected_framework${NC}" >&2
+        exit 1
+    fi
+
+    echo "" >&2
+    echo -e "${BLUE}Which scope would you like to use with $selected_framework?${NC}" >&2
+
+    local i=1
+    for scope in "${scopes[@]}"; do
+        local description="${scope_descriptions[$((i-1))]}"
+        echo -e "${CYAN}  $i) $scope${NC}" >&2
+        echo "     $description" >&2
+        ((i++))
+    done
+
+    while true; do
+        echo "" >&2
+        read -p "Select scope (1-${#scopes[@]}): " selection
+        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le ${#scopes[@]} ]; then
+            local selected_index=$((selection - 1))
+            echo "${scopes[$selected_index]}"
+            return
+        else
+            echo -e "${RED}Invalid selection. Please choose 1-${#scopes[@]}.${NC}" >&2
+        fi
+    done
+}
+
+select_llm() {
+    local api_response="$1"
+    local selected_framework="$2"
+    local selected_scope="$3"
+
+    # Extract available LLM variants for the selected framework and scope
+    local llms=()
+    local llm_descriptions=()
+
+    if command -v jq >/dev/null 2>&1; then
+        local framework_obj
+        framework_obj=$(echo "$api_response" | jq -c ".frameworks[] | select(.name == \"$selected_framework\")")
+        if [ -n "$framework_obj" ]; then
+            local scope_obj
+            scope_obj=$(echo "$framework_obj" | jq -c ".scopes[] | select(.name == \"$selected_scope\")")
+            if [ -n "$scope_obj" ]; then
+                local variants_json
+                variants_json=$(echo "$scope_obj" | jq -c '.variants[]')
+                while IFS= read -r variant_obj; do
+                    if [ -n "$variant_obj" ]; then
+                        local name description
+                        name=$(echo "$variant_obj" | jq -r '.name')
+                        description=$(echo "$variant_obj" | jq -r '.description')
+                        llms+=("$name")
+                        llm_descriptions+=("$description")
+                    fi
+                done <<< "$variants_json"
+            fi
+        fi
+    else
+        # Basic parsing without jq - simplified fallback for known structure
+        # For blissframework, we know it has universal and claude variants
+        if [ "$selected_framework" = "blissframework" ]; then
+            llms+=("universal")
+            llm_descriptions+=("Works with any LLM")
+            llms+=("claude")
+            llm_descriptions+=("Optimized for Claude AI")
+        else
+            # Generic fallback
+            llms+=("universal")
+            llm_descriptions+=("Works with any LLM")
+        fi
+    fi
+
+    if [ ${#llms[@]} -eq 0 ]; then
+        echo -e "${RED}ERROR: No LLM variants available for $selected_framework/$selected_scope${NC}" >&2
+        exit 1
+    fi
+
+    echo "" >&2
+    echo -e "${BLUE}Which LLM will you use with $selected_framework ($selected_scope)?${NC}" >&2
+
+    local i=1
+    for llm in "${llms[@]}"; do
+        local description="${llm_descriptions[$((i-1))]}"
+        case "$llm" in
+            "claude") echo -e "${CYAN}  $i) Claude (Anthropic) - $description${NC}" >&2 ;;
+            "gemini") echo -e "${CYAN}  $i) Gemini (Google) - $description${NC}" >&2 ;;
+            "universal") echo -e "${CYAN}  $i) Universal - $description${NC}" >&2 ;;
+            *) echo -e "${CYAN}  $i) $llm - $description${NC}" >&2 ;;
+        esac
+        ((i++))
+    done
+
+    while true; do
+        echo "" >&2
+        read -p "Select LLM (1-${#llms[@]}): " selection
+        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le ${#llms[@]} ]; then
+            local selected_index=$((selection - 1))
+            echo "${llms[$selected_index]}"
+            return
+        else
+            echo -e "${RED}Invalid selection. Please choose 1-${#llms[@]}.${NC}" >&2
+        fi
+    done
+}
+
+find_download_url() {
+    local api_response="$1"
+    local selected_framework="$2"
+    local selected_scope="$3"
+    local selected_llm="$4"
+
+    # Find the download URL for the specific combination
+    if command -v jq >/dev/null 2>&1; then
+        local framework_obj
+        framework_obj=$(echo "$api_response" | jq -c ".frameworks[] | select(.name == \"$selected_framework\")")
+        if [ -n "$framework_obj" ]; then
+            local scope_obj
+            scope_obj=$(echo "$framework_obj" | jq -c ".scopes[] | select(.name == \"$selected_scope\")")
+            if [ -n "$scope_obj" ]; then
+                local variant_obj
+                variant_obj=$(echo "$scope_obj" | jq -c ".variants[] | select(.name == \"$selected_llm\")")
+                if [ -n "$variant_obj" ]; then
+                    local download_url
+                    download_url=$(echo "$variant_obj" | jq -r '.download_url')
+                    echo "$download_url"
+                    return
+                fi
+            fi
+        fi
+    else
+        # Basic parsing - construct URL from pattern
+        if [ "$selected_llm" = "universal" ]; then
+            echo "/init/shared/$selected_framework/$selected_scope"
+        else
+            echo "/init/shared/$selected_framework/$selected_scope/$selected_llm"
+        fi
+        return
+    fi
+
+    echo -e "${RED}ERROR: Download URL not found for $selected_framework/$selected_scope/$selected_llm${NC}" >&2
+    exit 1
+}
+
 download_package() {
-    local package="$1"
-    local framework llm download_url
+    local framework="$1"
+    local scope="$2"
+    local llm="$3"
+    local download_url="$4"
 
-    framework=$(json_get "$package" "framework")
-    llm=$(json_get "$package" "llm")
-    download_url=$(json_get "$package" "download_url")
+    local target_dir="$INITAI_DIR/$framework-$scope-$llm"
 
-    local target_dir="$INITAI_DIR/$framework-$llm"
-
-    echo ""
-    verbose_echo "${YELLOW}Downloading $framework ($llm) package...${NC}"
+    echo "" >&2
+    verbose_echo "${YELLOW}Downloading $framework ($scope) package for $llm...${NC}" >&2
 
     mkdir -p "$target_dir"
 
     local full_download_url="$BASE_URL$download_url"
     local zip_file="$target_dir/package.zip"
 
-    verbose_echo "${CYAN}  Downloading from $full_download_url...${NC}"
+    verbose_echo "${CYAN}  Downloading from $full_download_url...${NC}" >&2
     if ! http_get "$full_download_url" "$zip_file"; then
-        echo -e "${RED}ERROR: Failed to download package${NC}"
+        echo -e "${RED}ERROR: Failed to download package${NC}" >&2
         exit 1
     fi
 
-    verbose_echo "${CYAN}  Extracting package...${NC}"
-    if ! (cd "$target_dir" && unzip -q package.zip); then
-        echo -e "${RED}ERROR: Failed to extract package${NC}"
+    verbose_echo "${CYAN}  Extracting package...${NC}" >&2
+    if ! (cd "$target_dir" && unzip -qo package.zip); then
+        echo -e "${RED}ERROR: Failed to extract package${NC}" >&2
         exit 1
     fi
 
     rm -f "$zip_file"
 
-    echo -e "${GREEN}Package downloaded and extracted to: $target_dir${NC}"
+    echo -e "${GREEN}Package downloaded and extracted to: $target_dir${NC}" >&2
     echo "$target_dir"
 }
 
 save_configuration() {
-    local package="$1"
-    local target_dir="$2"
-    local preferred_llm="$3"
-
-    local framework llm description download_url
-    framework=$(json_get "$package" "framework")
-    llm=$(json_get "$package" "llm")
-    description=$(json_get "$package" "description")
-    download_url=$(json_get "$package" "download_url")
+    local framework="$1"
+    local scope="$2"
+    local llm="$3"
+    local target_dir="$4"
 
     cat > "$CONFIG_FILE" << EOF
 {
   "base_url": "$BASE_URL",
   "framework": "$framework",
+  "scope": "$scope",
   "llm": "$llm",
-  "preferred_llm": "$preferred_llm",
-  "description": "$description",
-  "download_url": "$download_url",
+  "description": "$framework $scope development for $llm",
+  "download_url": "/init/shared/$framework/$scope$([ "$llm" != "universal" ] && echo "/$llm" || echo "")",
   "target_dir": "$target_dir",
   "last_updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "script_version": "$CURRENT_VERSION"
@@ -390,18 +547,22 @@ EOF
 
 generate_llm_instructions() {
     local preferred_llm="$1"
-    local package="$2"
-    local target_dir="$3"
-
-    local framework
-    framework=$(json_get "$package" "framework")
+    local framework="$2"
+    local scope="$3"
+    local target_dir="$4"
 
     local llm_file content
 
     case "$preferred_llm" in
         "claude")
             llm_file="CLAUDE.md"
-            content="# Claude Instructions for $framework
+            content="# Claude Instructions for $framework ($scope)
+
+## Project Context Management
+- **Always save project context and notes to PROJECT.md**
+- CLAUDE.md contains only initialization instructions (don't modify)
+- Use PROJECT.md for ongoing project documentation, decisions, and context
+- Load PROJECT.md content at start of each session to continue where you left off
 
 ## Communication Style
 - Use bullet points for all responses
@@ -410,7 +571,8 @@ generate_llm_instructions() {
 
 ## Project Setup
 - Framework: $framework
-- Package: $(json_get "$package" "llm")
+- Scope: $scope
+- LLM specialization: $preferred_llm
 - Initialization files: $target_dir
 
 ## Instructions
@@ -419,19 +581,26 @@ Please read and follow the initialization files in $target_dir on every session 
 - Load the framework configuration
 - Apply the coding standards and patterns
 - Use the provided templates and conventions
+- **Load PROJECT.md to understand current project state**
+
+## File Structure
+- CLAUDE.md - Initialization instructions (static - don't modify)
+- PROJECT.md - Your working context (dynamic - update regularly)
+- $target_dir/ - Framework files and templates
 
 ## Key Guidelines
 - Always use bullet format for responses
 - Prioritize developer productivity
 - Follow the framework's best practices
 - Maintain consistency across the project
+- **Save all project decisions and context to PROJECT.md**
 
 ---
 Generated by initai.dev on $(date +%Y-%m-%d)"
             ;;
         "gemini")
             llm_file="GEMINI.md"
-            content="# Gemini Instructions for $framework
+            content="# Gemini Instructions for $framework ($scope)
 
 ## Communication Style
 - Use bullet points for all responses
@@ -440,7 +609,8 @@ Generated by initai.dev on $(date +%Y-%m-%d)"
 
 ## Project Setup
 - Framework: $framework
-- Package: $(json_get "$package" "llm")
+- Scope: $scope
+- LLM specialization: $preferred_llm
 - Initialization files: $target_dir
 
 ## Instructions
@@ -461,7 +631,7 @@ Generated by initai.dev on $(date +%Y-%m-%d)"
             ;;
         "universal")
             llm_file="LLM_INSTRUCTIONS.md"
-            content="# LLM Instructions for $framework
+            content="# LLM Instructions for $framework ($scope)
 
 ## Communication Style
 - Use bullet points for all responses
@@ -470,7 +640,8 @@ Generated by initai.dev on $(date +%Y-%m-%d)"
 
 ## Project Setup
 - Framework: $framework
-- Package: $(json_get "$package" "llm")
+- Scope: $scope
+- LLM specialization: $preferred_llm
 - Initialization files: $target_dir
 
 ## Instructions
@@ -492,6 +663,20 @@ Generated by initai.dev on $(date +%Y-%m-%d)"
     esac
 
     if [ -n "$content" ]; then
+        # Check if LLM instruction file already exists
+        if [ -f "$llm_file" ]; then
+            echo ""
+            read -p "$llm_file už existuje. Přepsat? (y/n): " overwrite
+            if [[ ! "$overwrite" =~ ^[yY]$ ]]; then
+                echo -e "${CYAN}Ponecháván stávající $llm_file${NC}"
+                echo ""
+                echo -e "${YELLOW}UPOZORNĚNÍ: Ujistěte se, že váš $llm_file obsahuje instrukci:${NC}"
+                echo -e "${BLUE}\"Please read and follow the initialization files in $target_dir on every session start\"${NC}"
+                echo ""
+                return
+            fi
+        fi
+
         if echo "$content" > "$llm_file"; then
             echo -e "${GREEN}Created $llm_file with project instructions${NC}"
         else
@@ -576,11 +761,17 @@ test_package_update() {
 
     verbose_echo "${CYAN}Checking for package updates...${NC}"
 
-    local framework llm
+    local framework scope llm
     framework=$(json_get "$config" "framework")
+    scope=$(json_get "$config" "scope")
     llm=$(json_get "$config" "llm")
 
-    local package_url="$BASE_URL/init/shared/$framework/$llm"
+    local package_url
+    if [ "$llm" = "universal" ]; then
+        package_url="$BASE_URL/init/shared/$framework/$scope"
+    else
+        package_url="$BASE_URL/init/shared/$framework/$scope/$llm"
+    fi
 
     # Simple check - just verify package still exists
     if http_get "$package_url" > /dev/null 2>&1; then
@@ -592,33 +783,6 @@ test_package_update() {
     return 1  # For now, don't auto-update packages
 }
 
-start_claude() {
-    local config="$1"
-
-    echo ""
-    echo -e "${GREEN}Starting Claude in console...${NC}"
-
-    if command -v claude-code >/dev/null 2>&1; then
-        echo -e "${CYAN}Launching Claude Code CLI...${NC}"
-        claude-code
-    elif command -v claude >/dev/null 2>&1; then
-        echo -e "${CYAN}Launching Claude CLI...${NC}"
-        claude
-    else
-        echo -e "${YELLOW}Claude CLI not found. Please install Claude Code CLI:${NC}"
-        echo "Visit: https://claude.ai/code for installation instructions"
-    fi
-
-    echo ""
-    echo -e "${BLUE}=== Quick Start ===${NC}"
-    echo "1. Open your project files"
-
-    local target_dir
-    target_dir=$(json_get "$config" "target_dir")
-    echo "2. Load the framework configuration from: $target_dir"
-    echo "3. Follow the instructions in your LLM-specific .md file"
-    echo ""
-}
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -649,6 +813,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --verbose)
             VERBOSE=true
+            shift
+            ;;
+        --ignore-ssl-issues)
+            IGNORE_SSL=true
             shift
             ;;
         *)
@@ -687,21 +855,21 @@ main() {
     fi
 
     if ! test_configuration; then
-        # New setup - ask for LLM preference first
-        preferred_llm=$(select_llm)
+        # New setup - ask for framework, scope, then LLM
+        api_response=$(get_available_packages)
 
-        packages_response=$(get_available_packages)
-        selected_package=$(select_package "$packages_response" "$preferred_llm")
+        selected_framework=$(select_framework "$api_response")
+        selected_scope=$(select_scope "$api_response" "$selected_framework")
+        selected_llm=$(select_llm "$api_response" "$selected_framework" "$selected_scope")
+        download_url=$(find_download_url "$api_response" "$selected_framework" "$selected_scope" "$selected_llm")
 
         echo ""
-        local framework llm
-        framework=$(json_get "$selected_package" "framework")
-        llm=$(json_get "$selected_package" "llm")
-        echo -e "${BLUE}Selected: $framework ($llm) for $preferred_llm${NC}"
+        echo -e "${BLUE}Selected: $selected_framework ($selected_scope) for $selected_llm${NC}"
 
-        target_dir=$(download_package "$selected_package")
-        save_configuration "$selected_package" "$target_dir" "$preferred_llm"
-        generate_llm_instructions "$preferred_llm" "$selected_package" "$target_dir"
+        echo -e "${CYAN}Debug: About to download package...${NC}"
+        target_dir=$(download_package "$selected_framework" "$selected_scope" "$selected_llm" "$download_url")
+        save_configuration "$selected_framework" "$selected_scope" "$selected_llm" "$target_dir"
+        generate_llm_instructions "$selected_llm" "$selected_framework" "$selected_scope" "$target_dir"
         show_package_instructions "$target_dir"
 
         echo ""
@@ -709,17 +877,39 @@ main() {
         echo -e "${YELLOW}Framework files: ./$target_dir/${NC}"
         echo -e "${YELLOW}LLM instructions: ./CLAUDE.md (or ./GEMINI.md)${NC}"
         echo -e "${BLUE}Tell your LLM: 'Load the initialization files and follow the project instructions'${NC}"
+
+        # Ask if user wants to launch Claude (only if Claude was selected)
+        if [ "$selected_llm" = "claude" ]; then
+            echo ""
+            read -p "Spustit Claude? (y/n): " launch_claude
+            if [[ "$launch_claude" =~ ^[yY]$ ]]; then
+                # Save preference and launch Claude
+                echo "launch_claude=true" >> .initai
+                if command -v claude-code >/dev/null 2>&1; then
+                    echo -e "${CYAN}Spouštím Claude Code...${NC}"
+                    claude-code
+                elif command -v claude >/dev/null 2>&1; then
+                    echo -e "${CYAN}Spouštím Claude CLI...${NC}"
+                    claude
+                else
+                    echo -e "${YELLOW}Claude CLI nebyl nalezen. Prosím nainstalujte Claude Code CLI:${NC}"
+                    echo "https://claude.ai/code"
+                fi
+            else
+                echo "launch_claude=false" >> .initai
+            fi
+        fi
     else
         # Existing configuration - check for updates and show package instructions
         config=$(get_current_configuration)
         if [ -n "$config" ]; then
-            local framework llm preferred_llm target_dir
+            local framework llm scope target_dir
             framework=$(json_get "$config" "framework")
+            scope=$(json_get "$config" "scope")
             llm=$(json_get "$config" "llm")
-            preferred_llm=$(json_get "$config" "preferred_llm")
             target_dir=$(json_get "$config" "target_dir")
 
-            echo -e "${CYAN}Current configuration: $framework ($llm) for $preferred_llm${NC}"
+            echo -e "${CYAN}Current configuration: $framework ($scope) for $llm${NC}"
             echo -e "${YELLOW}Target directory: $target_dir${NC}"
 
             # Check for package updates
@@ -729,14 +919,8 @@ main() {
             show_package_instructions "$target_dir"
 
             echo -e "${BLUE}Use --force to reconfigure${NC}"
-
-            # Launch Claude after configuration
-            start_claude "$config"
         fi
     fi
-
-    echo ""
-    echo -e "${GREEN}Ready to code with initai.dev!${NC}"
 }
 
 # Run main function

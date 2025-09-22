@@ -3,20 +3,20 @@ defmodule WebPhoenixWeb.InitController do
 
   @doc """
   Main endpoint for downloading initialization files as ZIP
-  Pattern: /init/[tenant]/[framework]/[llm] or /init/[tenant]/[framework]
+  Pattern: /init/[tenant]/[framework]/[scope]/[llm] or /init/[tenant]/[framework]/[scope]
   For now we use "shared" as tenant, later this will be user-configurable
   LLM is optional - if not specified, returns universal framework files
   """
-  def download_package(conn, %{"tenant" => tenant, "framework" => framework} = params) do
+  def download_package(conn, %{"tenant" => tenant, "framework" => framework, "scope" => scope} = params) do
     llm = Map.get(params, "llm", "universal")
-    download_package_impl(conn, tenant, framework, llm)
+    download_package_impl(conn, tenant, framework, scope, llm)
   end
 
   # Implementation function
-  defp download_package_impl(conn, tenant, framework, llm) do
-    case create_init_package(tenant, framework, llm) do
+  defp download_package_impl(conn, tenant, framework, scope, llm) do
+    case create_init_package(tenant, framework, scope, llm) do
       {:ok, zip_data, manifest} ->
-        filename = "#{framework}-#{llm}-init.zip"
+        filename = "#{framework}-#{scope}-#{llm}-init.zip"
 
         conn
         |> put_resp_content_type("application/zip")
@@ -26,7 +26,7 @@ defmodule WebPhoenixWeb.InitController do
       {:error, :not_found} ->
         conn
         |> put_status(:not_found)
-        |> json(%{error: "Package not found", tenant: tenant, framework: framework, llm: llm})
+        |> json(%{error: "Package not found", tenant: tenant, framework: framework, scope: scope, llm: llm})
 
       {:error, reason} ->
         conn
@@ -38,14 +38,14 @@ defmodule WebPhoenixWeb.InitController do
   @doc """
   Create ZIP package with all initialization files and manifest
   """
-  defp create_init_package(tenant, framework, llm) do
+  defp create_init_package(tenant, framework, scope, llm) do
     # For now, only support "shared" tenant
     if tenant != "shared" do
       {:error, :not_found}
     else
-      case get_framework_files(framework, llm) do
+      case get_framework_files(framework, scope, llm) do
         {:ok, files} ->
-          manifest = create_manifest(framework, llm, files)
+          manifest = create_manifest(framework, scope, llm, files)
 
           case create_zip(files, manifest) do
             {:ok, zip_data} -> {:ok, zip_data, manifest}
@@ -58,13 +58,13 @@ defmodule WebPhoenixWeb.InitController do
   end
 
   @doc """
-  Get all files for a specific framework and LLM
-  Priority: specific LLM files > universal framework files
+  Get all files for a specific framework, scope and LLM
+  Priority: specific LLM files > universal scope files
   """
-  defp get_framework_files(framework, llm) do
+  defp get_framework_files(framework, scope, llm) do
     # Try specific LLM path first, then fallback to universal
-    specific_path = Path.join(["priv", "packages", "shared", framework, llm])
-    universal_path = Path.join(["priv", "packages", "shared", framework])
+    specific_path = Path.join(["priv", "packages", "shared", framework, scope, llm])
+    universal_path = Path.join(["priv", "packages", "shared", framework, scope])
 
     content_path = cond do
       llm != "universal" && File.dir?(specific_path) -> specific_path  # LLM-specific exists
@@ -105,11 +105,12 @@ defmodule WebPhoenixWeb.InitController do
   @doc """
   Create manifest.json for the package
   """
-  defp create_manifest(framework, llm, files) do
+  defp create_manifest(framework, scope, llm, files) do
     %{
       version: "1.0.0",
       tenant: "shared",
       framework: framework,
+      scope: scope,
       llm: llm,
       created_at: DateTime.utc_now() |> DateTime.to_iso8601(),
       files: Enum.map(files, fn file ->
@@ -120,7 +121,7 @@ defmodule WebPhoenixWeb.InitController do
         }
       end),
       metadata: %{
-        description: get_framework_description(framework, llm),
+        description: get_framework_description(framework, scope, llm),
         install_instructions: "Extract all files to your project's initialization directory"
       }
     }
@@ -159,12 +160,18 @@ defmodule WebPhoenixWeb.InitController do
   @doc """
   Get framework description - this will later come from database
   """
-  defp get_framework_description(framework, llm) do
-    case {framework, llm} do
-      {"blissframework", "claude"} -> "Bliss Framework for Claude - Developer happiness and rapid iteration"
-      {"blissframework", "gemini"} -> "Bliss Framework for Gemini - Streamlined development experience"
-      {"blissframework", "universal"} -> "Bliss Framework - Universal developer happiness and rapid iteration"
-      {_, _} -> "LLM initialization framework"
+  defp get_framework_description(framework, scope, llm) do
+    case {framework, scope, llm} do
+      {"blissframework", "backend", "claude"} -> "Bliss Framework Backend for Claude - Server-side development with Claude optimizations"
+      {"blissframework", "backend", "gemini"} -> "Bliss Framework Backend for Gemini - Server-side development with Gemini optimizations"
+      {"blissframework", "backend", "universal"} -> "Bliss Framework Backend - Universal server-side development setup"
+      {"blissframework", "frontend", "claude"} -> "Bliss Framework Frontend for Claude - Client-side development with Claude optimizations"
+      {"blissframework", "frontend", "gemini"} -> "Bliss Framework Frontend for Gemini - Client-side development with Gemini optimizations"
+      {"blissframework", "frontend", "universal"} -> "Bliss Framework Frontend - Universal client-side development setup"
+      {"blissframework", "fullstack", "claude"} -> "Bliss Framework Fullstack for Claude - Complete application with Claude optimizations"
+      {"blissframework", "fullstack", "gemini"} -> "Bliss Framework Fullstack for Gemini - Complete application with Gemini optimizations"
+      {"blissframework", "fullstack", "universal"} -> "Bliss Framework Fullstack - Universal complete application setup"
+      {_, _, _} -> "LLM initialization framework"
     end
   end
 
@@ -178,62 +185,125 @@ defmodule WebPhoenixWeb.InitController do
       |> put_status(:not_found)
       |> json(%{error: "Tenant not found"})
     else
-      packages = get_available_packages()
+      frameworks = get_available_frameworks()
 
       conn
       |> json(%{
         tenant: tenant,
-        packages: packages,
-        total: length(packages)
+        frameworks: frameworks,
+        total: length(frameworks)
       })
     end
   end
 
   @doc """
-  Get list of available packages - this will later query database
+  Get list of available frameworks with their scopes and variants - this will later query database
   """
-  defp get_available_packages do
+  defp get_available_frameworks do
     packages_dir = Path.join(["priv", "packages", "shared"])
 
     case File.ls(packages_dir) do
-      {:ok, frameworks} ->
-        frameworks
+      {:ok, framework_names} ->
+        framework_names
         |> Enum.filter(&File.dir?(Path.join([packages_dir, &1])))
-        |> Enum.flat_map(fn framework ->
-          framework_path = Path.join([packages_dir, framework])
+        |> Enum.map(fn framework_name ->
+          framework_path = Path.join([packages_dir, framework_name])
 
-          # Check for universal package (framework root)
-          universal_package = if File.exists?(Path.join([framework_path, "manifest.json"])) do
-            [%{
-              framework: framework,
-              llm: "universal",
-              description: get_framework_description(framework, "universal"),
-              download_url: "/init/shared/#{framework}"
-            }]
-          else
-            []
-          end
-
-          # Check for LLM-specific packages
-          llm_packages = case File.ls(framework_path) do
-            {:ok, entries} ->
-              entries
+          # Get all scopes for this framework
+          scopes = case File.ls(framework_path) do
+            {:ok, scope_entries} ->
+              scope_entries
               |> Enum.filter(&File.dir?(Path.join([framework_path, &1])))
-              |> Enum.filter(&File.exists?(Path.join([framework_path, &1, "manifest.json"])))
-              |> Enum.map(fn llm ->
+              |> Enum.map(fn scope_name ->
+                scope_path = Path.join([framework_path, scope_name])
+
+                # Check for universal variant (scope root)
+                universal_variants = if File.exists?(Path.join([scope_path, "manifest.json"])) do
+                  [%{
+                    type: "llm",
+                    name: "universal",
+                    description: "Works with any LLM",
+                    download_url: "/init/shared/#{framework_name}/#{scope_name}"
+                  }]
+                else
+                  []
+                end
+
+                # Check for LLM-specific variants
+                llm_variants = case File.ls(scope_path) do
+                  {:ok, llm_entries} ->
+                    llm_entries
+                    |> Enum.filter(&File.dir?(Path.join([scope_path, &1])))
+                    |> Enum.filter(&File.exists?(Path.join([scope_path, &1, "manifest.json"])))
+                    |> Enum.map(fn llm_name ->
+                      %{
+                        type: "llm",
+                        name: llm_name,
+                        description: get_llm_description(llm_name),
+                        download_url: "/init/shared/#{framework_name}/#{scope_name}/#{llm_name}"
+                      }
+                    end)
+                  _ -> []
+                end
+
+                all_variants = universal_variants ++ llm_variants
+
                 %{
-                  framework: framework,
-                  llm: llm,
-                  description: get_framework_description(framework, llm),
-                  download_url: "/init/shared/#{framework}/#{llm}"
+                  name: scope_name,
+                  description: get_scope_description(scope_name),
+                  variants: all_variants
                 }
               end)
+              |> Enum.filter(fn scope -> length(scope.variants) > 0 end)
             _ -> []
           end
 
-          universal_package ++ llm_packages
+          %{
+            name: framework_name,
+            description: get_base_framework_description(framework_name),
+            scopes: scopes
+          }
         end)
+        |> Enum.filter(fn framework -> length(framework.scopes) > 0 end)
       _ -> []
+    end
+  end
+
+
+  @doc """
+  Get base framework description (without LLM-specific text)
+  """
+  defp get_base_framework_description(framework) do
+    case framework do
+      "blissframework" -> "Bliss Framework - Developer happiness and rapid iteration"
+      _ -> "LLM initialization framework"
+    end
+  end
+
+  @doc """
+  Get scope-specific description
+  """
+  defp get_scope_description(scope) do
+    case scope do
+      "backend" -> "Server-side development and APIs"
+      "frontend" -> "Client-side user interface development"
+      "fullstack" -> "Complete application with frontend and backend"
+      "api" -> "RESTful API development"
+      "mobile" -> "Mobile application development"
+      "desktop" -> "Desktop application development"
+      _ -> "#{String.capitalize(scope)} development"
+    end
+  end
+
+  @doc """
+  Get LLM-specific description
+  """
+  defp get_llm_description(llm) do
+    case llm do
+      "claude" -> "Optimized for Claude AI"
+      "gemini" -> "Optimized for Google Gemini"
+      "universal" -> "Works with any LLM"
+      _ -> "#{String.capitalize(llm)} integration"
     end
   end
 end
