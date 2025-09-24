@@ -12,10 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Smart Claude Code integration** - Automatic Claude launch prompts for Claude-specific packages
 - **Project context management** - Separation of static instructions (CLAUDE.md) and dynamic context (PROJECT.md)
 - **File protection system** - Warns before overwriting existing CLAUDE.md files
-- **Cross-platform installation scripts** - Enhanced Bash and PowerShell scripts with three-tier selection
+- **Cross-platform installation scripts** - Enhanced Bash, PowerShell, and Python scripts with three-tier selection
+- **Python installation support** - Full-featured install.py and initai.py with cross-platform compatibility
 - **Comprehensive documentation** - Updated README.md with complete architecture overview
 - **Changelog button** - Fixed position changelog access button in top-right corner
-- **Bootstrap installer** - Separate install.ps1 for initial setup with PATH management
+- **Bootstrap installer** - Separate install.ps1/install.py for initial setup with PATH management
 - **PATH integration** - Automatic user PATH setup for global initai command access
 - **.NET package support** - Added dotnet scope with Claude-optimized guidance files
 - **Tenant system documentation** - Dedicated tenant-system.md for multi-tenant architecture
@@ -58,11 +59,12 @@ Framework (blissframework)
 ```
 
 #### Enhanced Installation Scripts
-- **Bootstrap installer (install.ps1)**: Separate installer with PATH management and smart restart messaging
+- **Bootstrap installer (install.ps1/install.py)**: Separate installers with PATH management and smart restart messaging
 - **Bash (initai.sh)**: Added `select_scope()` function, unified config, and READ-ONLY folder instructions
 - **PowerShell (initai.ps1)**: Parallel implementation with `Select-Scope`, Claude detection, and color fixes
+- **Python (initai.py)**: Full cross-platform implementation with identical three-tier functionality
 - **Error handling**: Improved JSON parsing with fallback mechanisms and proper BaseUrl parameter passing
-- **Cross-platform sync**: Both scripts maintain identical functionality and user experience
+- **Cross-platform sync**: All three scripts maintain identical functionality and user experience
 
 #### API Endpoints
 ```
@@ -87,8 +89,9 @@ GET /init/shared/{framework}/{scope}/{llm}               # LLM-specialized packa
 - **Smart PATH detection**: Checks existing PATH before adding initai.dev directory
 - **User PATH modification**: Safe user-level PATH updates without requiring admin privileges
 - **Conditional restart messaging**: Only shows "Restart console" when PATH was actually modified
-- **Bootstrap workflow**: install.ps1 → download initai.ps1 → setup PATH → launch main script
+- **Bootstrap workflow**: install.ps1/install.py → download initai.ps1/initai.py → setup PATH → launch main script
 - **Global command access**: 'initai' command available from any directory after PATH setup
+- **Python registry support**: Windows registry manipulation and Unix shell RC file updates
 
 #### Claude Code Integration
 - Automatic launch prompt for Claude selections
